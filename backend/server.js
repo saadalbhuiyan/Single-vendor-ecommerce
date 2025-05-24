@@ -5,6 +5,8 @@ import cors from 'cors';               // Enables Cross-Origin Resource Sharing
 import helmet from 'helmet';           // Adds security-related HTTP headers
 import authRoutes from './routes/authRoutes.js'; // Import authentication related routes
 import userRoutes from './routes/userRoutes.js';
+import productRoutes from './routes/productRoutes.js';
+import adminAuthRoutes from './routes/adminAuthRoutes.js';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -27,11 +29,13 @@ const PORT = process.env.PORT || 5000;
 connectDB();
 
 // Define route for authentication APIs
+app.use('/api/admin', adminAuthRoutes);
+
 app.use('/api/auth', authRoutes);
 
 app.use('/api/users', userRoutes);
 
-
+app.use('/api/products', productRoutes);
 
 
 // Start the server and listen on the defined port
