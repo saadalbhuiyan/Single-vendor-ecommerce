@@ -4,6 +4,7 @@ import dotenv from 'dotenv';           // Loads environment variables from a .en
 import cors from 'cors';               // Enables Cross-Origin Resource Sharing
 import helmet from 'helmet';           // Adds security-related HTTP headers
 import authRoutes from './routes/authRoutes.js'; // Import authentication related routes
+import userRoutes from './routes/userRoutes.js';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -28,10 +29,10 @@ connectDB();
 // Define route for authentication APIs
 app.use('/api/auth', authRoutes);
 
-// Define a basic route for the root URL
-app.get('/', (req, res) => {
-    res.send('Hello World!');
-});
+app.use('/api/users', userRoutes);
+
+
+
 
 // Start the server and listen on the defined port
 app.listen(PORT, () => {
