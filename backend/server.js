@@ -22,6 +22,9 @@ app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/admin', require('./routes/adminUserRoutes'));  // ADD THIS LINE
 
+app.use('/api/categories', require('./routes/categoryRoutes'));
+app.use('/api/admin/categories', require('./routes/adminCategoryRoutes'));
+
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
