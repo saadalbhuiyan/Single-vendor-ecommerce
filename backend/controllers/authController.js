@@ -1,65 +1,95 @@
-import User from '../models/User.js';
-import { sendOTPEmail } from '../utils/otpEmail.js';
-import jwt from 'jsonwebtoken';
+const OTP = require('../models/OTP');
+const User = require('../models/User');
+const generateOTP = require('../utils/generateOTP');
+const transporter = require('../config/smtpConfig');
+const jwt = require('jsonwebtoken');
+const jwtConfig = require('../config/jwtConfig');
 
-function generateOTP() {
-    return Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
-}
-
-export const sendOTP = async (req, res) => {
+exports.sendOTP = async (req, res) => {
     try {
         const { email } = req.body;
         if (!email) return res.status(400).json({ message: 'Email is required' });
 
-        let user = await User.findOne({ email });
+        const otpCode = generateOTP(6);
+        const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiry
 
-        const otp = generateOTP();
-        const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+        await OTP.deleteMany({ email });
 
-        if (!user) {
-            user = new User({ email, otp, otpExpiresAt });
-        } else {
-            user.otp = otp;
-            user.otpExpiresAt = otpExpiresAt;
-        }
+        const otpEntry = new OTP({ email, code: otpCode, expiresAt });
+        await otpEntry.save();
 
-        await user.save();
+        const mailOptions = {
+            from: `"E-Commerce" <${process.env.SMTP_USER}>`,
+            to: email,
+            subject: 'Your OTP Code',
+            text: `Your OTP code is ${otpCode}. It expires in 5 minutes.`,
+        };
 
-        await sendOTPEmail(email, otp);
+        await transporter.sendMail(mailOptions);
 
-        res.json({ message: 'OTP sent to email' });
+        return res.json({ message: 'OTP sent to email' });
     } catch (error) {
-        res.status(500).json({ message: 'Failed to send OTP', error: error.message });
+        console.error('sendOTP error:', error);
+        return res.status(500).json({
+            message: 'Internal Server Error',
+            error: error.message || error.toString(),
+        });
     }
 };
 
-export const verifyOTP = async (req, res) => {
+exports.verifyOTP = async (req, res) => {
     try {
         const { email, otp } = req.body;
-        if (!email || !otp) return res.status(400).json({ message: 'Email and OTP are required' });
+        if (!email || !otp) {
+            return res.status(400).json({ message: 'Email and OTP are required' });
+        }
 
-        const user = await User.findOne({ email });
-        if (!user) return res.status(400).json({ message: 'User not found' });
+        const otpEntry = await OTP.findOne({ email, code: otp });
+        if (!otpEntry) return res.status(400).json({ message: 'Invalid OTP' });
 
-        if (user.otp !== otp) return res.status(400).json({ message: 'Invalid OTP' });
+        if (otpEntry.expiresAt < new Date()) {
+            await OTP.deleteMany({ email });
+            return res.status(400).json({ message: 'OTP expired' });
+        }
 
-        if (user.otpExpiresAt < new Date()) return res.status(400).json({ message: 'OTP expired' });
+        let user = await User.findOne({ email });
+        if (!user) {
+            user = new User({ email, isEmailVerified: true });
+            await user.save();
+        } else if (!user.isEmailVerified) {
+            user.isEmailVerified = true;
+            await user.save();
+        }
 
-        user.isVerified = true;
-        user.otp = null;
-        user.otpExpiresAt = null;
+        const token = jwt.sign({ id: user._id }, jwtConfig.secret, { expiresIn: jwtConfig.expiresIn });
+
+        user.jwtToken = token;
         await user.save();
 
-        const token = jwt.sign({ id: user._id.toString() }, process.env.JWT_SECRET, { expiresIn: '1d' });
+        await OTP.deleteMany({ email });
 
-        res.json({ message: 'OTP verified', token });
+        return res.json({ token, user: { id: user._id, email: user.email, name: user.name } });
     } catch (error) {
-        res.status(500).json({ message: 'Failed to verify OTP', error: error.message });
+        console.error('verifyOTP error:', error);
+        return res.status(500).json({ message: 'Internal Server Error' });
     }
 };
 
-export const logout = async (req, res) => {
-    // For JWT, logout on client side by deleting token.
-    // Optionally, implement token blacklist on server for invalidation.
-    res.json({ message: 'Logout successful (client-side token discard)' });
+exports.logout = async (req, res) => {
+    try {
+        const authHeader = req.headers.authorization || '';
+        const token = authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+        if (!token) return res.status(400).json({ message: 'No token provided' });
+
+        const decoded = jwt.verify(token, jwtConfig.secret);
+        const user = await User.findById(decoded.id);
+        if (user) {
+            user.jwtToken = null;
+            await user.save();
+        }
+        return res.json({ message: 'Logged out successfully' });
+    } catch (error) {
+        console.error('logout error:', error);
+        return res.status(500).json({ message: 'Internal Server Error' });
+    }
 };

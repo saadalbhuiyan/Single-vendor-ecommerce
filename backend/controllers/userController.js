@@ -1,74 +1,121 @@
-// Same as provided before, but here it is again for clarity:
+const User = require('../models/User');
+const path = require('path');
+const fs = require('fs');
 
-import User from '../models/User.js';
-
-export const getUser = async (req, res) => {
+exports.getProfile = async (req, res) => {
     try {
         const user = req.user;
-        res.json({
+        return res.json({
+            id: user._id,
             email: user.email,
             name: user.name,
             mobile: user.mobile,
-            addresses: user.addresses,
-            isVerified: user.isVerified,
-            createdAt: user.createdAt,
+            address: user.address,
+            avatar: user.avatar,
+            isEmailVerified: user.isEmailVerified,
         });
-    } catch {
-        res.status(500).json({ message: 'Server error' });
+    } catch (error) {
+        console.error('getProfile error:', error);
+        return res.status(500).json({ message: 'Internal Server Error' });
     }
 };
 
-export const updateUser = async (req, res) => {
+exports.updateProfile = async (req, res) => {
     try {
-        const { name, email } = req.body;
         const user = req.user;
+        const { name, email } = req.body;
 
-        if (name) user.name = name;
-        if (email && email !== user.email) {
+        if (name !== undefined) user.name = name;
+
+        if (email !== undefined && email !== user.email) {
             user.email = email;
-            user.isVerified = false;
+            user.isEmailVerified = false;
         }
 
         await user.save();
-        res.json({ message: 'Profile updated successfully' });
-    } catch {
-        res.status(500).json({ message: 'Server error' });
+
+        return res.json({ message: 'Profile updated', user });
+    } catch (error) {
+        console.error('updateProfile error:', error);
+        return res.status(500).json({ message: 'Internal Server Error' });
     }
 };
 
-export const deleteUser = async (req, res) => {
+exports.deleteAccount = async (req, res) => {
     try {
-        await User.findByIdAndDelete(req.user._id);
-        res.json({ message: 'User deleted successfully' });
-    } catch {
-        res.status(500).json({ message: 'Server error' });
+        const userId = req.user._id;
+        await User.findByIdAndDelete(userId);
+        return res.json({ message: 'User account deleted' });
+    } catch (error) {
+        console.error('deleteAccount error:', error);
+        return res.status(500).json({ message: 'Internal Server Error' });
     }
 };
 
-export const updateAddress = async (req, res) => {
+exports.updateAddress = async (req, res) => {
     try {
-        const { addresses } = req.body;
-        if (!Array.isArray(addresses)) return res.status(400).json({ message: 'Addresses must be an array' });
-
         const user = req.user;
-        user.addresses = addresses;
+        const { address } = req.body;
+        if (!address) return res.status(400).json({ message: 'Address is required' });
+
+        user.address = address;
         await user.save();
-        res.json({ message: 'Addresses updated successfully', addresses: user.addresses });
-    } catch {
-        res.status(500).json({ message: 'Server error' });
+
+        return res.json({ message: 'Address updated', address: user.address });
+    } catch (error) {
+        console.error('updateAddress error:', error);
+        return res.status(500).json({ message: 'Internal Server Error' });
     }
 };
 
-export const updateMobile = async (req, res) => {
+exports.updateMobile = async (req, res) => {
     try {
+        const user = req.user;
         const { mobile } = req.body;
         if (!mobile) return res.status(400).json({ message: 'Mobile number is required' });
 
-        const user = req.user;
         user.mobile = mobile;
         await user.save();
-        res.json({ message: 'Mobile number updated successfully', mobile: user.mobile });
-    } catch {
-        res.status(500).json({ message: 'Server error' });
+
+        return res.json({ message: 'Mobile number updated', mobile: user.mobile });
+    } catch (error) {
+        console.error('updateMobile error:', error);
+        return res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+exports.uploadAvatar = async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
+
+        const user = req.user;
+
+        if (user.avatar) {
+            const oldPath = path.join(__dirname, '..', user.avatar);
+            if (fs.existsSync(oldPath)) {
+                fs.unlinkSync(oldPath);
+            }
+        }
+
+        user.avatar = `uploads/${req.file.filename}`;
+        await user.save();
+
+        return res.json({ message: 'Avatar uploaded', avatar: user.avatar });
+    } catch (error) {
+        console.error('uploadAvatar error:', error);
+        return res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+exports.verifyEmailChange = async (req, res) => {
+    try {
+        const user = req.user;
+        user.isEmailVerified = true;
+        await user.save();
+
+        return res.json({ message: 'Email verified' });
+    } catch (error) {
+        console.error('verifyEmailChange error:', error);
+        return res.status(500).json({ message: 'Internal Server Error' });
     }
 };

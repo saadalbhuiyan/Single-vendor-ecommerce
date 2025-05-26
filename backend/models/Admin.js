@@ -1,9 +1,8 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 
 const adminSchema = new mongoose.Schema({
     username: { type: String, required: true, unique: true },
-    password: { type: String, required: true }, // stored in plain text as per your requirement (NOT recommended for production)
-    createdAt: { type: Date, default: Date.now },
-});
+    password: { type: String, required: true }, // Plain text as per request; not recommended for production
+}, { timestamps: true });
 
-export default mongoose.model('Admin', adminSchema);
+module.exports = mongoose.model('Admin', adminSchema);

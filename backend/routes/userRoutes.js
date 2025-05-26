@@ -1,13 +1,17 @@
-import express from 'express';
-import { auth } from '../middleware/auth.js';
-import { getUser, updateUser, deleteUser, updateAddress, updateMobile } from '../controllers/userController.js';
-
+const express = require('express');
 const router = express.Router();
+const userController = require('../controllers/userController');
+const { verifyUserToken } = require('../middleware/authMiddleware');
+const upload = require('../middleware/uploadMiddleware');
 
-router.get('/me', auth, getUser);
-router.put('/me', auth, updateUser);
-router.delete('/me', auth, deleteUser);
-router.put('/me/address', auth, updateAddress);
-router.put('/me/mobile', auth, updateMobile);
+router.get('/me', verifyUserToken, userController.getProfile);
+router.put('/me', verifyUserToken, userController.updateProfile);
+router.delete('/me', verifyUserToken, userController.deleteAccount);
 
-export default router;
+router.put('/me/address', verifyUserToken, userController.updateAddress);
+router.put('/me/mobile', verifyUserToken, userController.updateMobile);
+router.post('/me/avatar', verifyUserToken, upload.single('avatar'), userController.uploadAvatar);
+
+router.post('/me/verify-email-change', verifyUserToken, userController.verifyEmailChange);
+
+module.exports = router;
