@@ -7,7 +7,8 @@ const userSchema = new mongoose.Schema({
     address: { type: String, default: '' },
     avatar: { type: String, default: '' },
     isEmailVerified: { type: Boolean, default: false },
-    jwtToken: { type: String, default: null },
+    jwtToken: { type: String, default: null } ,
+    isActive: { type: Boolean, default: true }
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);
