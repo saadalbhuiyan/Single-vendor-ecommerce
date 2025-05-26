@@ -35,6 +35,9 @@ app.use('/api/admin/coupons', require('./routes/adminCouponRoutes'));
 // User coupon routes
 app.use('/api/coupons', require('./routes/couponRoutes'));
 
+app.use('/api/cart', require('./routes/cartRoutes'));
+
+
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
