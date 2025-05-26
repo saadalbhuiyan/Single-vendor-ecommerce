@@ -15,18 +15,19 @@ app.use('/uploads', express.static('uploads'));
 
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
-app.use('/api/admin', require('./routes/adminRoutes'));
 
-app.use('/api/auth', require('./routes/authRoutes'));
-app.use('/api/users', require('./routes/userRoutes'));
+// Admin routes separated by function
 app.use('/api/admin', require('./routes/adminRoutes'));
-app.use('/api/admin', require('./routes/adminUserRoutes'));  // ADD THIS LINE
+app.use('/api/admin/users', require('./routes/adminUserRoutes'));
 
 app.use('/api/categories', require('./routes/categoryRoutes'));
 app.use('/api/admin/categories', require('./routes/adminCategoryRoutes'));
 
 app.use('/api/products', require('./routes/productRoutes'));
 app.use('/api/admin/products', require('./routes/adminProductRoutes'));
+
+app.use('/api/wishlist', require('./routes/wishlistRoutes'));
+app.use('/api/admin/wishlist', require('./routes/adminWishlistRoutes'));
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
