@@ -1,6 +1,10 @@
 const Wishlist = require('../models/Wishlist');
 const Product = require('../models/Product');
 
+/**
+ * Get wishlist items of the authenticated user.
+ * GET /api/wishlist
+ */
 exports.getUserWishlist = async (req, res) => {
     try {
         const wishlistItems = await Wishlist.find({ user: req.user._id })
@@ -14,6 +18,10 @@ exports.getUserWishlist = async (req, res) => {
     }
 };
 
+/**
+ * Add a product to the authenticated user's wishlist.
+ * POST /api/wishlist
+ */
 exports.addToWishlist = async (req, res) => {
     try {
         const { productId } = req.body;
@@ -47,6 +55,10 @@ exports.addToWishlist = async (req, res) => {
     }
 };
 
+/**
+ * Remove a product from the authenticated user's wishlist.
+ * DELETE /api/wishlist/:productId
+ */
 exports.removeFromWishlist = async (req, res) => {
     try {
         const { productId } = req.params;
@@ -61,6 +73,10 @@ exports.removeFromWishlist = async (req, res) => {
     }
 };
 
+/**
+ * Clear the entire wishlist for the authenticated user.
+ * DELETE /api/wishlist
+ */
 exports.clearWishlist = async (req, res) => {
     try {
         await Wishlist.deleteMany({ user: req.user._id });
@@ -71,6 +87,10 @@ exports.clearWishlist = async (req, res) => {
     }
 };
 
+/**
+ * Admin: Get all wishlist items with user and product details.
+ * GET /api/admin/wishlist
+ */
 exports.getAllWishlist = async (req, res) => {
     try {
         const allWishlist = await Wishlist.find()
@@ -84,6 +104,10 @@ exports.getAllWishlist = async (req, res) => {
     }
 };
 
+/**
+ * Admin: Delete a wishlist item by ID.
+ * DELETE /api/admin/wishlist/:id
+ */
 exports.deleteWishlistItemByAdmin = async (req, res) => {
     try {
         const { id } = req.params;

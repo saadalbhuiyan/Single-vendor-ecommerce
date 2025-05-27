@@ -4,9 +4,14 @@ const Product = require('../models/Product');
 const Coupon = require('../models/Coupon');
 const ReturnRequest = require('../models/ReturnRequest');
 
+/**
+ * Get sales report for the last 30 days:
+ * - total sales amount
+ * - total orders
+ * - average order value
+ */
 exports.getSalesReport = async (req, res) => {
     try {
-        // মোট বিক্রয়, মোট অর্ডার, গড় অর্ডার মূল্য, সময় ভিত্তিক (last 30 days)
         const last30Days = new Date();
         last30Days.setDate(last30Days.getDate() - 30);
 
@@ -18,8 +23,8 @@ exports.getSalesReport = async (req, res) => {
                     totalSales: { $sum: '$totalAmount' },
                     totalOrders: { $sum: 1 },
                     avgOrderValue: { $avg: '$totalAmount' },
-                }
-            }
+                },
+            },
         ]);
 
         res.json({ success: true, data: salesData[0] || {} });
@@ -29,14 +34,18 @@ exports.getSalesReport = async (req, res) => {
     }
 };
 
+/**
+ * Get user activity report for the last 30 days:
+ * - total users
+ * - active users who placed orders
+ * - active user percentage
+ */
 exports.getUserActivityReport = async (req, res) => {
     try {
-        // ইউজার সংখ্যা, গত 30 দিনে কতজন অ্যাকটিভ ছিল (অর্ডার করেছে)
         const last30Days = new Date();
         last30Days.setDate(last30Days.getDate() - 30);
 
         const totalUsers = await User.countDocuments();
-
         const activeUsers = await Order.distinct('user', { createdAt: { $gte: last30Days } });
 
         res.json({
@@ -45,7 +54,7 @@ exports.getUserActivityReport = async (req, res) => {
                 totalUsers,
                 activeUsers: activeUsers.length,
                 activeUserPercentage: ((activeUsers.length / totalUsers) * 100).toFixed(2),
-            }
+            },
         });
     } catch (error) {
         console.error('getUserActivityReport error:', error);
@@ -53,9 +62,13 @@ exports.getUserActivityReport = async (req, res) => {
     }
 };
 
+/**
+ * Get product performance report:
+ * - total quantity sold per product
+ * - total sales amount per product
+ */
 exports.getProductPerformanceReport = async (req, res) => {
     try {
-        // প্রতিটি প্রোডাক্টের মোট বিক্রয় সংখ্যা ও পরিমাণ
         const productPerformance = await Order.aggregate([
             { $match: { paymentStatus: 'paid' } },
             { $unwind: '$items' },
@@ -64,15 +77,15 @@ exports.getProductPerformanceReport = async (req, res) => {
                     _id: '$items.product',
                     totalQuantitySold: { $sum: '$items.quantity' },
                     totalSalesAmount: { $sum: { $multiply: ['$items.quantity', '$items.price'] } },
-                }
+                },
             },
             {
                 $lookup: {
                     from: 'products',
                     localField: '_id',
                     foreignField: '_id',
-                    as: 'productDetails'
-                }
+                    as: 'productDetails',
+                },
             },
             { $unwind: '$productDetails' },
             {
@@ -80,10 +93,10 @@ exports.getProductPerformanceReport = async (req, res) => {
                     productId: '$_id',
                     name: '$productDetails.name',
                     totalQuantitySold: 1,
-                    totalSalesAmount: 1
-                }
+                    totalSalesAmount: 1,
+                },
             },
-            { $sort: { totalQuantitySold: -1 } }
+            { $sort: { totalQuantitySold: -1 } },
         ]);
 
         res.json({ success: true, data: productPerformance });
@@ -93,16 +106,18 @@ exports.getProductPerformanceReport = async (req, res) => {
     }
 };
 
+/**
+ * Get order status distribution report.
+ */
 exports.getOrderStatusReport = async (req, res) => {
     try {
-        // অর্ডারের স্ট্যাটাস অনুযায়ী সংখ্যা
         const statusCounts = await Order.aggregate([
             {
                 $group: {
                     _id: '$orderStatus',
-                    count: { $sum: 1 }
-                }
-            }
+                    count: { $sum: 1 },
+                },
+            },
         ]);
 
         res.json({ success: true, data: statusCounts });
@@ -112,19 +127,23 @@ exports.getOrderStatusReport = async (req, res) => {
     }
 };
 
+/**
+ * Get coupon usage report:
+ * - usage count per coupon
+ * - total discount amount per coupon
+ */
 exports.getCouponUsageReport = async (req, res) => {
     try {
-        // প্রতিটি কুপনের ব্যবহার এবং সফলতা হার
         const couponStats = await Order.aggregate([
             { $match: { coupon: { $ne: null }, paymentStatus: 'paid' } },
             {
                 $group: {
                     _id: '$coupon.code',
                     usageCount: { $sum: 1 },
-                    totalDiscount: { $sum: '$coupon.discountValue' }
-                }
+                    totalDiscount: { $sum: '$coupon.discountValue' },
+                },
             },
-            { $sort: { usageCount: -1 } }
+            { $sort: { usageCount: -1 } },
         ]);
 
         res.json({ success: true, data: couponStats });
@@ -134,9 +153,11 @@ exports.getCouponUsageReport = async (req, res) => {
     }
 };
 
+/**
+ * Get return/refund request statistics.
+ */
 exports.getReturnRequestsReport = async (req, res) => {
     try {
-        // রিটার্ন/রিফান্ড রিকোয়েস্টের পরিসংখ্যান
         const totalRequests = await ReturnRequest.countDocuments();
         const pendingRequests = await ReturnRequest.countDocuments({ status: 'pending' });
         const approvedRequests = await ReturnRequest.countDocuments({ status: 'approved' });
@@ -149,7 +170,7 @@ exports.getReturnRequestsReport = async (req, res) => {
                 pendingRequests,
                 approvedRequests,
                 rejectedRequests,
-            }
+            },
         });
     } catch (error) {
         console.error('getReturnRequestsReport error:', error);
@@ -157,9 +178,11 @@ exports.getReturnRequestsReport = async (req, res) => {
     }
 };
 
+/**
+ * Get sales by category report.
+ */
 exports.getSalesByCategoryReport = async (req, res) => {
     try {
-        // ক্যাটাগরি অনুযায়ী বিক্রয় পরিমাণ
         const salesByCategory = await Order.aggregate([
             { $match: { paymentStatus: 'paid' } },
             { $unwind: '$items' },
@@ -168,24 +191,24 @@ exports.getSalesByCategoryReport = async (req, res) => {
                     from: 'products',
                     localField: 'items.product',
                     foreignField: '_id',
-                    as: 'productDetails'
-                }
+                    as: 'productDetails',
+                },
             },
             { $unwind: '$productDetails' },
             {
                 $group: {
                     _id: '$productDetails.category',
                     totalSales: { $sum: { $multiply: ['$items.quantity', '$items.price'] } },
-                    totalQuantity: { $sum: '$items.quantity' }
-                }
+                    totalQuantity: { $sum: '$items.quantity' },
+                },
             },
             {
                 $lookup: {
                     from: 'categories',
                     localField: '_id',
                     foreignField: '_id',
-                    as: 'categoryDetails'
-                }
+                    as: 'categoryDetails',
+                },
             },
             { $unwind: '$categoryDetails' },
             {
@@ -193,10 +216,10 @@ exports.getSalesByCategoryReport = async (req, res) => {
                     categoryId: '$_id',
                     categoryName: '$categoryDetails.name',
                     totalSales: 1,
-                    totalQuantity: 1
-                }
+                    totalQuantity: 1,
+                },
             },
-            { $sort: { totalSales: -1 } }
+            { $sort: { totalSales: -1 } },
         ]);
 
         res.json({ success: true, data: salesByCategory });
@@ -206,25 +229,27 @@ exports.getSalesByCategoryReport = async (req, res) => {
     }
 };
 
+/**
+ * Get top customers report (top 10 by total spent).
+ */
 exports.getTopCustomersReport = async (req, res) => {
     try {
-        // শীর্ষ ক্রেতাদের তালিকা (কতটা কেনা হয়েছে)
         const topCustomers = await Order.aggregate([
             { $match: { paymentStatus: 'paid' } },
             {
                 $group: {
                     _id: '$user',
                     totalSpent: { $sum: '$totalAmount' },
-                    totalOrders: { $sum: 1 }
-                }
+                    totalOrders: { $sum: 1 },
+                },
             },
             {
                 $lookup: {
                     from: 'users',
                     localField: '_id',
                     foreignField: '_id',
-                    as: 'userDetails'
-                }
+                    as: 'userDetails',
+                },
             },
             { $unwind: '$userDetails' },
             {
@@ -232,11 +257,11 @@ exports.getTopCustomersReport = async (req, res) => {
                     userId: '$_id',
                     userName: '$userDetails.name',
                     totalSpent: 1,
-                    totalOrders: 1
-                }
+                    totalOrders: 1,
+                },
             },
             { $sort: { totalSpent: -1 } },
-            { $limit: 10 }
+            { $limit: 10 },
         ]);
 
         res.json({ success: true, data: topCustomers });
@@ -246,17 +271,19 @@ exports.getTopCustomersReport = async (req, res) => {
     }
 };
 
+/**
+ * Get inventory status report by summing stock in product variants.
+ */
 exports.getInventoryStatusReport = async (req, res) => {
     try {
-        // প্রোডাক্ট ইনভেন্টরি (স্টক) অবস্থা রিপোর্ট
         const inventoryStatus = await Product.aggregate([
             {
                 $project: {
                     name: 1,
                     totalStock: { $sum: '$variants.stock' },
-                }
+                },
             },
-            { $sort: { totalStock: -1 } }
+            { $sort: { totalStock: -1 } },
         ]);
 
         res.json({ success: true, data: inventoryStatus });

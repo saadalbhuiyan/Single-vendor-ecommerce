@@ -1,6 +1,9 @@
 const Category = require('../models/Category');
 
-// User-Facing: Get all top-level categories (parent = null)
+/**
+ * User-Facing: Get all top-level categories (categories without a parent).
+ * GET /api/categories/top-level
+ */
 exports.getTopLevelCategories = async (req, res) => {
     try {
         const categories = await Category.find({ parent: null }).sort({ name: 1 });
@@ -11,7 +14,10 @@ exports.getTopLevelCategories = async (req, res) => {
     }
 };
 
-// User-Facing: Get subcategories under a parent
+/**
+ * User-Facing: Get subcategories under a specified parent category.
+ * GET /api/categories/:parentId/subcategories
+ */
 exports.getSubcategories = async (req, res) => {
     try {
         const { parentId } = req.params;
@@ -23,32 +29,39 @@ exports.getSubcategories = async (req, res) => {
     }
 };
 
-// Admin-Facing: Get all categories including hierarchy
+/**
+ * Admin-Facing: Get all categories (flat list).
+ * GET /api/admin/categories
+ *
+ * Note: Consider implementing a tree structure response if required.
+ */
 exports.getAllCategories = async (req, res) => {
     try {
-        // Option 1: flat list sorted by name
         const categories = await Category.find().sort({ name: 1 });
         res.json(categories);
-
-        // Option 2 (optional): send nested tree structure if needed
-        // You can build a tree here if required.
     } catch (error) {
         console.error('getAllCategories error:', error);
         res.status(500).json({ message: 'Internal Server Error' });
     }
 };
 
-// Admin-Facing: Create new category or subcategory
+/**
+ * Admin-Facing: Create a new category or subcategory.
+ * POST /api/admin/categories
+ */
 exports.createCategory = async (req, res) => {
     try {
         const { name, description, parent } = req.body;
 
-        if (!name) return res.status(400).json({ message: 'Category name is required' });
+        if (!name) {
+            return res.status(400).json({ message: 'Category name is required' });
+        }
 
-        // Validate parent if provided
         if (parent) {
             const parentCategory = await Category.findById(parent);
-            if (!parentCategory) return res.status(400).json({ message: 'Invalid parent category' });
+            if (!parentCategory) {
+                return res.status(400).json({ message: 'Invalid parent category' });
+            }
         }
 
         const category = new Category({ name, description, parent: parent || null });
@@ -57,22 +70,26 @@ exports.createCategory = async (req, res) => {
         res.status(201).json({ message: 'Category created', category });
     } catch (error) {
         console.error('createCategory error:', error);
-        // Handle duplicate key error (unique name)
-        if (error.code === 11000) {
+        if (error.code === 11000) { // Duplicate key error
             return res.status(400).json({ message: 'Category name must be unique' });
         }
         res.status(500).json({ message: 'Internal Server Error' });
     }
 };
 
-// Admin-Facing: Update category
+/**
+ * Admin-Facing: Update category details.
+ * PUT /api/admin/categories/:id
+ */
 exports.updateCategory = async (req, res) => {
     try {
         const categoryId = req.params.id;
         const { name, description, parent } = req.body;
 
         const category = await Category.findById(categoryId);
-        if (!category) return res.status(404).json({ message: 'Category not found' });
+        if (!category) {
+            return res.status(404).json({ message: 'Category not found' });
+        }
 
         if (name !== undefined) category.name = name;
         if (description !== undefined) category.description = description;
@@ -83,7 +100,9 @@ exports.updateCategory = async (req, res) => {
             }
             if (parent) {
                 const parentCategory = await Category.findById(parent);
-                if (!parentCategory) return res.status(400).json({ message: 'Invalid parent category' });
+                if (!parentCategory) {
+                    return res.status(400).json({ message: 'Invalid parent category' });
+                }
                 category.parent = parent;
             } else {
                 category.parent = null;
@@ -91,6 +110,7 @@ exports.updateCategory = async (req, res) => {
         }
 
         await category.save();
+
         res.json({ message: 'Category updated', category });
     } catch (error) {
         console.error('updateCategory error:', error);
@@ -101,15 +121,20 @@ exports.updateCategory = async (req, res) => {
     }
 };
 
-// Admin-Facing: Delete category
+/**
+ * Admin-Facing: Delete a category.
+ * DELETE /api/admin/categories/:id
+ *
+ * Optional: Add checks to prevent deletion if category has subcategories or linked products.
+ */
 exports.deleteCategory = async (req, res) => {
     try {
         const categoryId = req.params.id;
 
-        // Optional: Check if category has subcategories or linked products before delete
-
         const category = await Category.findByIdAndDelete(categoryId);
-        if (!category) return res.status(404).json({ message: 'Category not found' });
+        if (!category) {
+            return res.status(404).json({ message: 'Category not found' });
+        }
 
         res.json({ message: 'Category deleted' });
     } catch (error) {

@@ -2,6 +2,10 @@ const User = require('../models/User');
 const path = require('path');
 const fs = require('fs');
 
+/**
+ * Get authenticated user's profile data.
+ * GET /api/users/me
+ */
 exports.getProfile = async (req, res) => {
     try {
         const user = req.user;
@@ -20,6 +24,10 @@ exports.getProfile = async (req, res) => {
     }
 };
 
+/**
+ * Update authenticated user's profile (name and/or email).
+ * PATCH /api/users/me
+ */
 exports.updateProfile = async (req, res) => {
     try {
         const user = req.user;
@@ -29,7 +37,7 @@ exports.updateProfile = async (req, res) => {
 
         if (email !== undefined && email !== user.email) {
             user.email = email;
-            user.isEmailVerified = false;
+            user.isEmailVerified = false; // Reset verification on email change
         }
 
         await user.save();
@@ -41,6 +49,10 @@ exports.updateProfile = async (req, res) => {
     }
 };
 
+/**
+ * Delete authenticated user's account.
+ * DELETE /api/users/me
+ */
 exports.deleteAccount = async (req, res) => {
     try {
         const userId = req.user._id;
@@ -52,6 +64,10 @@ exports.deleteAccount = async (req, res) => {
     }
 };
 
+/**
+ * Update user's shipping address.
+ * PATCH /api/users/me/address
+ */
 exports.updateAddress = async (req, res) => {
     try {
         const user = req.user;
@@ -68,6 +84,10 @@ exports.updateAddress = async (req, res) => {
     }
 };
 
+/**
+ * Update user's mobile number.
+ * PATCH /api/users/me/mobile
+ */
 exports.updateMobile = async (req, res) => {
     try {
         const user = req.user;
@@ -84,12 +104,18 @@ exports.updateMobile = async (req, res) => {
     }
 };
 
+/**
+ * Upload and update user's avatar image.
+ * POST /api/users/me/avatar
+ * Expects a single file upload with field name 'avatar'.
+ */
 exports.uploadAvatar = async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
 
         const user = req.user;
 
+        // Delete old avatar file if exists
         if (user.avatar) {
             const oldPath = path.join(__dirname, '..', user.avatar);
             if (fs.existsSync(oldPath)) {
@@ -107,6 +133,10 @@ exports.uploadAvatar = async (req, res) => {
     }
 };
 
+/**
+ * Confirm and mark email as verified.
+ * POST /api/users/me/verify-email-change
+ */
 exports.verifyEmailChange = async (req, res) => {
     try {
         const user = req.user;

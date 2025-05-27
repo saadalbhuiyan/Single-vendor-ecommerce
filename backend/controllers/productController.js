@@ -4,6 +4,10 @@ const fs = require('fs');
 const path = require('path');
 const { compressImage } = require('../utils/imageUtils');
 
+/**
+ * List products with optional filters on category and price range.
+ * GET /api/products
+ */
 exports.listProducts = async (req, res) => {
     try {
         const filters = {};
@@ -12,9 +16,10 @@ exports.listProducts = async (req, res) => {
         if (req.query.maxPrice) {
             filters['variants.price'] = {
                 ...filters['variants.price'],
-                $lte: Number(req.query.maxPrice)
+                $lte: Number(req.query.maxPrice),
             };
         }
+
         const products = await Product.find(filters).populate('category').sort({ createdAt: -1 });
         res.json(products);
     } catch (error) {
@@ -23,6 +28,10 @@ exports.listProducts = async (req, res) => {
     }
 };
 
+/**
+ * Search products by name keyword (case-insensitive).
+ * GET /api/products/search?q=keyword
+ */
 exports.searchProducts = async (req, res) => {
     try {
         const keyword = req.query.q || '';
@@ -35,6 +44,10 @@ exports.searchProducts = async (req, res) => {
     }
 };
 
+/**
+ * Get detailed info of a product by ID.
+ * GET /api/products/:id
+ */
 exports.getProductDetails = async (req, res) => {
     try {
         const product = await Product.findById(req.params.id).populate('category');
@@ -46,6 +59,10 @@ exports.getProductDetails = async (req, res) => {
     }
 };
 
+/**
+ * Get all reviews for a product.
+ * GET /api/products/:id/reviews
+ */
 exports.getProductReviews = async (req, res) => {
     try {
         const reviews = await Review.find({ product: req.params.id }).populate('user', 'name email');
@@ -56,6 +73,10 @@ exports.getProductReviews = async (req, res) => {
     }
 };
 
+/**
+ * Submit a new review for a product.
+ * POST /api/products/:id/review
+ */
 exports.submitProductReview = async (req, res) => {
     try {
         const userId = req.user._id;
@@ -81,10 +102,16 @@ exports.submitProductReview = async (req, res) => {
     }
 };
 
+/**
+ * Create a new product.
+ * POST /api/admin/products
+ */
 exports.createProduct = async (req, res) => {
     try {
         const { name, description, category, variants } = req.body;
-        if (!name || !category) return res.status(400).json({ message: 'Name and category are required' });
+        if (!name || !category) {
+            return res.status(400).json({ message: 'Name and category are required' });
+        }
 
         const product = new Product({
             name,
@@ -102,6 +129,10 @@ exports.createProduct = async (req, res) => {
     }
 };
 
+/**
+ * Update an existing product by ID.
+ * PUT /api/admin/products/:id
+ */
 exports.updateProduct = async (req, res) => {
     try {
         const productId = req.params.id;
@@ -123,6 +154,10 @@ exports.updateProduct = async (req, res) => {
     }
 };
 
+/**
+ * Delete a product by ID, removing associated images from filesystem.
+ * DELETE /api/admin/products/:id
+ */
 exports.deleteProduct = async (req, res) => {
     try {
         const productId = req.params.id;
@@ -144,6 +179,10 @@ exports.deleteProduct = async (req, res) => {
     }
 };
 
+/**
+ * Upload and compress product images.
+ * POST /api/admin/products/:id/images
+ */
 exports.uploadProductImages = async (req, res) => {
     try {
         const productId = req.params.id;
@@ -161,6 +200,7 @@ exports.uploadProductImages = async (req, res) => {
 
             await compressImage(file.path, compressedImagePath);
 
+            // Delete original uncompressed file
             fs.unlinkSync(file.path);
 
             product.images.push(compressedImagePath);

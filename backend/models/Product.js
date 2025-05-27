@@ -1,5 +1,9 @@
 const mongoose = require('mongoose');
 
+/**
+ * Variant Schema
+ * Represents product variants such as size, color, price, and stock.
+ */
 const variantSchema = new mongoose.Schema({
     size: { type: String, default: '' },
     color: { type: String, default: '' },
@@ -7,6 +11,10 @@ const variantSchema = new mongoose.Schema({
     stock: { type: Number, default: 0 },
 });
 
+/**
+ * Product Schema
+ * Main product details including references to category and variants.
+ */
 const productSchema = new mongoose.Schema({
     name: { type: String, required: true },
     description: { type: String, default: '' },

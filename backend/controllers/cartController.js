@@ -2,12 +2,43 @@ const Cart = require('../models/Cart');
 const Product = require('../models/Product');
 const Coupon = require('../models/Coupon');
 
-// Helper: product থেকে শুধু যোগকৃত variant এর ডিটেইল নিয়ে আসা
+/**
+ * Helper: Retrieve the details of the added variant from a product.
+ * @param {Object} product - Product document
+ * @param {String|ObjectId} variantId - Variant ID to find
+ * @returns {Object|null} Variant details or null if not found
+ */
 function filterVariantDetails(product, variantId) {
     if (!variantId) return null;
     return product.variants.find(v => v._id.toString() === variantId.toString()) || null;
 }
 
+/**
+ * Helper: Format cart items with filtered variant details
+ * @param {Array} items - Array of cart items populated with product data
+ * @returns {Array} Formatted cart items array
+ */
+function formatCartItems(items) {
+    return items.map(item => {
+        const variantDetail = filterVariantDetails(item.product, item.variant);
+        return {
+            _id: item._id,
+            product: {
+                _id: item.product._id,
+                name: item.product.name,
+                description: item.product.description,
+                category: item.product.category,
+                images: item.product.images,
+            },
+            variant: variantDetail,
+            quantity: item.quantity,
+        };
+    });
+}
+
+/**
+ * GET current user's cart details with pricing and discount calculation.
+ */
 const getUserCart = async (req, res) => {
     try {
         let cart = await Cart.findOne({ user: req.user._id }).populate('items.product');
@@ -20,7 +51,7 @@ const getUserCart = async (req, res) => {
                     subtotal: 0,
                     discountAmount: 0,
                     total: 0,
-                }
+                },
             });
         }
 
@@ -43,35 +74,18 @@ const getUserCart = async (req, res) => {
 
         const total = subtotal - discountAmount;
 
-        // Prepare filtered items
-        const itemsWithFilteredVariant = cart.items.map(item => {
-            const variantDetail = filterVariantDetails(item.product, item.variant);
-            return {
-                _id: item._id,
-                product: {
-                    _id: item.product._id,
-                    name: item.product.name,
-                    description: item.product.description,
-                    category: item.product.category,
-                    images: item.product.images,
-                },
-                variant: variantDetail,
-                quantity: item.quantity,
-            };
-        });
-
         res.status(200).json({
             success: true,
             data: {
                 _id: cart._id,
                 user: cart.user,
-                items: itemsWithFilteredVariant,
+                items: formatCartItems(cart.items),
                 coupon: cart.coupon,
                 subtotal,
                 discountAmount,
                 total,
                 updatedAt: cart.updatedAt,
-            }
+            },
         });
     } catch (error) {
         console.error('getUserCart error:', error);
@@ -79,7 +93,9 @@ const getUserCart = async (req, res) => {
     }
 };
 
-// get user end
+/**
+ * Add a product (with optional variant) to the user's cart.
+ */
 const addItemToCart = async (req, res) => {
     try {
         const { productId, variant, quantity } = req.body;
@@ -109,56 +125,37 @@ const addItemToCart = async (req, res) => {
 
         cart.updatedAt = new Date();
         await cart.save();
-
         await cart.populate('items.product');
 
-        // Calculate subtotal
+        // Recalculate totals (subtotal, discount, total)
         const subtotal = cart.items.reduce((sum, item) => {
             const variantDetail = filterVariantDetails(item.product, item.variant);
             const price = variantDetail ? variantDetail.price : 0;
             return sum + price * item.quantity;
         }, 0);
 
-        // Calculate discount
         let discountAmount = 0;
         if (cart.coupon && cart.coupon.code) {
-            if (cart.coupon.discountType === 'percentage') {
-                discountAmount = (subtotal * cart.coupon.discountValue) / 100;
-            } else if (cart.coupon.discountType === 'fixed') {
-                discountAmount = cart.coupon.discountValue;
-            }
+            discountAmount =
+                cart.coupon.discountType === 'percentage'
+                    ? (subtotal * cart.coupon.discountValue) / 100
+                    : cart.coupon.discountValue;
         }
 
         const total = subtotal - discountAmount;
-
-        const itemsWithFilteredVariant = cart.items.map(item => {
-            const variantDetail = filterVariantDetails(item.product, item.variant);
-            return {
-                _id: item._id,
-                product: {
-                    _id: item.product._id,
-                    name: item.product.name,
-                    description: item.product.description,
-                    category: item.product.category,
-                    images: item.product.images,
-                },
-                variant: variantDetail,
-                quantity: item.quantity,
-            };
-        });
 
         res.status(201).json({
             success: true,
             data: {
                 _id: cart._id,
                 user: cart.user,
-                items: itemsWithFilteredVariant,
+                items: formatCartItems(cart.items),
                 coupon: cart.coupon,
                 subtotal,
                 discountAmount,
                 total,
                 updatedAt: cart.updatedAt,
-            }
+            },
         });
     } catch (error) {
         console.error('addItemToCart error:', error);
@@ -166,11 +163,14 @@ const addItemToCart = async (req, res) => {
     }
 };
 
-// add item card end
+/**
+ * Update the quantity of a cart item by item ID.
+ */
 const updateCartItemQuantity = async (req, res) => {
     try {
         const { itemId } = req.params;
         const { quantity } = req.body;
+
         if (!quantity || quantity < 1) {
             return res.status(400).json({ success: false, message: 'Quantity >= 1 is required' });
         }
@@ -191,31 +191,15 @@ const updateCartItemQuantity = async (req, res) => {
         await cart.save();
         await cart.populate('items.product');
 
-        const itemsWithFilteredVariant = cart.items.map(item => {
-            const variantDetail = filterVariantDetails(item.product, item.variant);
-            return {
-                _id: item._id,
-                product: {
-                    _id: item.product._id,
-                    name: item.product.name,
-                    description: item.product.description,
-                    category: item.product.category,
-                    images: item.product.images,
-                },
-                variant: variantDetail,
-                quantity: item.quantity,
-            };
-        });
-
         res.status(200).json({
             success: true,
             data: {
                 _id: cart._id,
                 user: cart.user,
-                items: itemsWithFilteredVariant,
+                items: formatCartItems(cart.items),
                 coupon: cart.coupon,
                 updatedAt: cart.updatedAt,
-            }
+            },
         });
     } catch (error) {
         console.error('updateCartItemQuantity error:', error);
@@ -223,6 +207,9 @@ const updateCartItemQuantity = async (req, res) => {
     }
 };
 
+/**
+ * Remove a cart item by item ID.
+ */
 const removeCartItem = async (req, res) => {
     try {
         const { itemId } = req.params;
@@ -240,34 +227,17 @@ const removeCartItem = async (req, res) => {
         item.remove();
         cart.updatedAt = new Date();
         await cart.save();
-
         await cart.populate('items.product');
-
-        const itemsWithFilteredVariant = cart.items.map(item => {
-            const variantDetail = filterVariantDetails(item.product, item.variant);
-            return {
-                _id: item._id,
-                product: {
-                    _id: item.product._id,
-                    name: item.product.name,
-                    description: item.product.description,
-                    category: item.product.category,
-                    images: item.product.images,
-                },
-                variant: variantDetail,
-                quantity: item.quantity,
-            };
-        });
 
         res.status(200).json({
             success: true,
             data: {
                 _id: cart._id,
                 user: cart.user,
-                items: itemsWithFilteredVariant,
+                items: formatCartItems(cart.items),
                 coupon: cart.coupon,
                 updatedAt: cart.updatedAt,
-            }
+            },
         });
     } catch (error) {
         console.error('removeCartItem error:', error);
@@ -275,6 +245,9 @@ const removeCartItem = async (req, res) => {
     }
 };
 
+/**
+ * Apply a coupon code to the user's cart.
+ */
 const applyCouponToCart = async (req, res) => {
     try {
         const { code } = req.body;
@@ -292,7 +265,7 @@ const applyCouponToCart = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Coupon is not valid at this time' });
         }
 
-        let cart = await Cart.findOne({ user: req.user._id });
+        const cart = await Cart.findOne({ user: req.user._id });
         if (!cart) {
             return res.status(404).json({ success: false, message: 'Cart not found' });
         }
@@ -307,31 +280,15 @@ const applyCouponToCart = async (req, res) => {
         await cart.save();
         await cart.populate('items.product');
 
-        const itemsWithFilteredVariant = cart.items.map(item => {
-            const variantDetail = filterVariantDetails(item.product, item.variant);
-            return {
-                _id: item._id,
-                product: {
-                    _id: item.product._id,
-                    name: item.product.name,
-                    description: item.product.description,
-                    category: item.product.category,
-                    images: item.product.images,
-                },
-                variant: variantDetail,
-                quantity: item.quantity,
-            };
-        });
-
         res.status(200).json({
             success: true,
             data: {
                 _id: cart._id,
                 user: cart.user,
-                items: itemsWithFilteredVariant,
+                items: formatCartItems(cart.items),
                 coupon: cart.coupon,
                 updatedAt: cart.updatedAt,
-            }
+            },
         });
     } catch (error) {
         console.error('applyCouponToCart error:', error);
@@ -339,6 +296,9 @@ const applyCouponToCart = async (req, res) => {
     }
 };
 
+/**
+ * Remove the applied coupon from the user's cart.
+ */
 const removeCouponFromCart = async (req, res) => {
     try {
         const cart = await Cart.findOne({ user: req.user._id });
@@ -356,31 +316,15 @@ const removeCouponFromCart = async (req, res) => {
         await cart.save();
         await cart.populate('items.product');
 
-        const itemsWithFilteredVariant = cart.items.map(item => {
-            const variantDetail = filterVariantDetails(item.product, item.variant);
-            return {
-                _id: item._id,
-                product: {
-                    _id: item.product._id,
-                    name: item.product.name,
-                    description: item.product.description,
-                    category: item.product.category,
-                    images: item.product.images,
-                },
-                variant: variantDetail,
-                quantity: item.quantity,
-            };
-        });
-
         res.status(200).json({
             success: true,
             data: {
                 _id: cart._id,
                 user: cart.user,
-                items: itemsWithFilteredVariant,
+                items: formatCartItems(cart.items),
                 coupon: cart.coupon,
                 updatedAt: cart.updatedAt,
-            }
+            },
         });
     } catch (error) {
         console.error('removeCouponFromCart error:', error);
@@ -388,6 +332,9 @@ const removeCouponFromCart = async (req, res) => {
     }
 };
 
+/**
+ * Clear the user's cart by removing all items and coupons.
+ */
 const clearCart = async (req, res) => {
     try {
         const cart = await Cart.findOne({ user: req.user._id });

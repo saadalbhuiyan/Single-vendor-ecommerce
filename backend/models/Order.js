@@ -1,12 +1,18 @@
 const mongoose = require('mongoose');
 
+/**
+ * Schema representing an individual item in an order.
+ */
 const orderItemSchema = new mongoose.Schema({
     product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
-    variant: { type: mongoose.Schema.Types.ObjectId, ref: 'Product.variants', default: null },
+    variant: { type: mongoose.Schema.Types.ObjectId, ref: 'Product.variants', default: null }, // Optional variant reference
     quantity: { type: Number, required: true, min: 1 },
-    price: { type: Number, required: true },
+    price: { type: Number, required: true }, // Price per unit at time of purchase
 });
 
+/**
+ * Schema representing an order placed by a user.
+ */
 const orderSchema = new mongoose.Schema({
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     items: [orderItemSchema],

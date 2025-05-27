@@ -2,7 +2,12 @@ const Order = require('../models/Order');
 const Cart = require('../models/Cart');
 const Coupon = require('../models/Coupon');
 
-// Helper to calculate total price from cart and coupon
+/**
+ * Helper: Calculate total price from cart items and optional coupon discount.
+ * @param {Object} cart - Cart document populated with items and products
+ * @param {Object|null} coupon - Coupon data or null
+ * @returns {Number} Total amount after discount (minimum 0)
+ */
 const calculateTotal = (cart, coupon) => {
     let total = 0;
     cart.items.forEach(item => {
@@ -28,7 +33,10 @@ const calculateTotal = (cart, coupon) => {
     return total < 0 ? 0 : total;
 };
 
-// Create order from cart
+/**
+ * Create an order from the user's cart.
+ * POST /api/orders
+ */
 exports.createOrder = async (req, res) => {
     try {
         const userId = req.user._id;
@@ -78,12 +86,12 @@ exports.createOrder = async (req, res) => {
             shippingAddress: req.body.shippingAddress || {},
             paymentStatus: 'pending',
             orderStatus: 'pending',
-            paymentMethod: 'DemoGateway', // you can change this dynamically
+            paymentMethod: 'DemoGateway', // Change dynamically if needed
         });
 
         await order.save();
 
-        // Clear user cart
+        // Clear user's cart
         cart.items = [];
         cart.coupon = null;
         await cart.save();
@@ -95,7 +103,10 @@ exports.createOrder = async (req, res) => {
     }
 };
 
-// Get user orders
+/**
+ * Get all orders for the authenticated user.
+ * GET /api/orders
+ */
 exports.getUserOrders = async (req, res) => {
     try {
         const orders = await Order.find({ user: req.user._id }).sort({ createdAt: -1 });
@@ -106,13 +117,18 @@ exports.getUserOrders = async (req, res) => {
     }
 };
 
-// Get order details
+/**
+ * Get specific order details by ID for authenticated user.
+ * GET /api/orders/:id
+ */
 exports.getOrderById = async (req, res) => {
     try {
         const order = await Order.findOne({ _id: req.params.id, user: req.user._id })
             .populate('items.product')
             .populate('items.variant');
+
         if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+
         res.status(200).json({ success: true, order });
     } catch (error) {
         console.error('getOrderById error:', error);
@@ -120,7 +136,10 @@ exports.getOrderById = async (req, res) => {
     }
 };
 
-// Cancel order (user)
+/**
+ * Cancel an order (only if not shipped or delivered).
+ * PUT /api/orders/:id/cancel
+ */
 exports.cancelOrder = async (req, res) => {
     try {
         const order = await Order.findOne({ _id: req.params.id, user: req.user._id });
@@ -140,14 +159,17 @@ exports.cancelOrder = async (req, res) => {
     }
 };
 
-// Initiate demo payment (simulate bKash or other gateway)
+/**
+ * Simulate payment initiation (demo purpose).
+ * GET /api/orders/:id/initiate-payment
+ */
 exports.initiatePayment = async (req, res) => {
     try {
         const order = await Order.findOne({ _id: req.params.id, user: req.user._id });
         if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
         if (order.paymentStatus === 'paid') return res.status(400).json({ success: false, message: 'Order already paid' });
 
-        // Instead of real gateway, simulate payment URL for demo:
+        // Simulated payment URL
         const paymentGatewayUrl = `https://demo-payment-gateway.com/pay?orderId=${order._id}&amount=${order.totalAmount}`;
 
         res.status(200).json({ success: true, paymentGatewayUrl });
@@ -157,10 +179,13 @@ exports.initiatePayment = async (req, res) => {
     }
 };
 
-// Simulate payment success webhook
+/**
+ * Handle payment success webhook (simulate).
+ * POST /api/orders/payment-success
+ */
 exports.handlePaymentSuccess = async (req, res) => {
     try {
-        const { tran_id } = req.body; // tran_id = order ID in our case
+        const { tran_id } = req.body; // transaction/order ID
 
         const order = await Order.findById(tran_id);
         if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
@@ -176,7 +201,10 @@ exports.handlePaymentSuccess = async (req, res) => {
     }
 };
 
-// Simulate payment fail webhook
+/**
+ * Handle payment failure webhook (simulate).
+ * POST /api/orders/payment-fail
+ */
 exports.handlePaymentFail = async (req, res) => {
     try {
         const { tran_id } = req.body;
@@ -195,7 +223,10 @@ exports.handlePaymentFail = async (req, res) => {
     }
 };
 
-// Request return/refund (user)
+/**
+ * Request a return/refund for an order.
+ * PUT /api/orders/:id/request-return
+ */
 exports.requestReturn = async (req, res) => {
     try {
         const order = await Order.findOne({ _id: req.params.id, user: req.user._id });
@@ -217,7 +248,10 @@ exports.requestReturn = async (req, res) => {
     }
 };
 
-// Admin: List all orders
+/**
+ * Admin: Get all orders.
+ * GET /api/admin/orders
+ */
 exports.getAllOrders = async (req, res) => {
     try {
         const orders = await Order.find().sort({ createdAt: -1 });
@@ -228,7 +262,10 @@ exports.getAllOrders = async (req, res) => {
     }
 };
 
-// Admin: Update order status
+/**
+ * Admin: Update order status.
+ * PUT /api/admin/orders/:id/status
+ */
 exports.updateOrderStatus = async (req, res) => {
     try {
         const { id } = req.params;
@@ -249,7 +286,10 @@ exports.updateOrderStatus = async (req, res) => {
     }
 };
 
-// Admin: Approve order cancellation
+/**
+ * Admin: Approve order cancellation.
+ * PUT /api/admin/orders/:id/approve-cancellation
+ */
 exports.approveOrderCancellation = async (req, res) => {
     try {
         const { id } = req.params;

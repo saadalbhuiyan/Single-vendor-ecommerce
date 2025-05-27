@@ -2,6 +2,7 @@ const Coupon = require('../models/Coupon');
 
 /**
  * Admin: Create a new coupon
+ * POST /api/admin/coupons
  */
 exports.createCoupon = async (req, res) => {
     try {
@@ -18,11 +19,12 @@ exports.createCoupon = async (req, res) => {
             active,
         } = req.body;
 
-        // Basic validation (you can add more)
+        // Basic required field validation
         if (!code || !discountType || !discountValue || !validUntil) {
             return res.status(400).json({ success: false, message: 'Required fields missing' });
         }
 
+        // Check for duplicate coupon code (case-insensitive)
         const existing = await Coupon.findOne({ code: code.toUpperCase().trim() });
         if (existing) {
             return res.status(400).json({ success: false, message: 'Coupon code already exists' });
@@ -50,7 +52,8 @@ exports.createCoupon = async (req, res) => {
 };
 
 /**
- * Admin: List all coupons
+ * Admin: Get all coupons sorted by creation date descending
+ * GET /api/admin/coupons
  */
 exports.getAllCoupons = async (req, res) => {
     try {
@@ -64,6 +67,7 @@ exports.getAllCoupons = async (req, res) => {
 
 /**
  * Admin: Update coupon by ID
+ * PUT /api/admin/coupons/:id
  */
 exports.updateCoupon = async (req, res) => {
     try {
@@ -92,14 +96,17 @@ exports.updateCoupon = async (req, res) => {
 
 /**
  * Admin: Delete coupon by ID
+ * DELETE /api/admin/coupons/:id
  */
 exports.deleteCoupon = async (req, res) => {
     try {
         const couponId = req.params.id;
         const deleted = await Coupon.findByIdAndDelete(couponId);
+
         if (!deleted) {
             return res.status(404).json({ success: false, message: 'Coupon not found' });
         }
+
         res.status(200).json({ success: true, message: 'Coupon deleted successfully' });
     } catch (error) {
         console.error('deleteCoupon error:', error);
@@ -108,7 +115,8 @@ exports.deleteCoupon = async (req, res) => {
 };
 
 /**
- * User: Validate coupon code query param ?code=XYZ123
+ * User: Validate coupon code passed as query param ?code=XYZ123
+ * GET /api/coupons/validate?code=XYZ123
  */
 exports.validateCoupon = async (req, res) => {
     try {
@@ -118,7 +126,6 @@ exports.validateCoupon = async (req, res) => {
         }
 
         const coupon = await Coupon.findOne({ code: code.toUpperCase().trim(), active: true });
-
         if (!coupon) {
             return res.status(404).json({ success: false, message: 'Invalid or inactive coupon code' });
         }
@@ -141,14 +148,17 @@ exports.validateCoupon = async (req, res) => {
 
 /**
  * User: Get coupon details by ID
+ * GET /api/coupons/:id
  */
 exports.getCouponById = async (req, res) => {
     try {
         const couponId = req.params.id;
         const coupon = await Coupon.findById(couponId);
+
         if (!coupon) {
             return res.status(404).json({ success: false, message: 'Coupon not found' });
         }
+
         res.status(200).json({ success: true, data: coupon });
     } catch (error) {
         console.error('getCouponById error:', error);

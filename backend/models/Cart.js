@@ -1,11 +1,18 @@
 const mongoose = require('mongoose');
 
+/**
+ * Schema representing an item in the cart.
+ */
 const CartItemSchema = new mongoose.Schema({
     product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
     variant: { type: String, default: null }, // Optional variant ID as string
     quantity: { type: Number, required: true, min: 1, default: 1 },
 });
 
+/**
+ * Schema representing a user's shopping cart.
+ * Each user can have only one cart (unique user field).
+ */
 const CartSchema = new mongoose.Schema({
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', unique: true, required: true },
     items: [CartItemSchema],
