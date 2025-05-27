@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const CartItemSchema = new mongoose.Schema({
     product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
-    variant: { type: String, required: false }, // Optional, e.g. size/color as string or JSON
+    variant: { type: String, default: null }, // Optional variant ID as string
     quantity: { type: Number, required: true, min: 1, default: 1 },
 });
 

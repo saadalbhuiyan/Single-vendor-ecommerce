@@ -10,7 +10,7 @@ router.post('/items', cartController.addItemToCart);
 router.put('/items/:itemId', cartController.updateCartItemQuantity);
 router.delete('/items/:itemId', cartController.removeCartItem);
 router.post('/apply-coupon', cartController.applyCouponToCart);
-router.delete('/clear', cartController.clearCart);
 router.post('/remove-coupon', cartController.removeCouponFromCart);
+router.delete('/clear', cartController.clearCart);
 
 module.exports = router;
