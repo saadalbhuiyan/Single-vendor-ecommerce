@@ -48,6 +48,9 @@ app.use('/api/admin/orders', require('./routes/adminOrderRoutes'));
 app.post('/api/payment/success', orderController.handlePaymentSuccess);
 app.post('/api/payment/fail', orderController.handlePaymentFail);
 
+app.use('/api/admin/reports', require('./routes/adminReportRoutes'));
+
+
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
