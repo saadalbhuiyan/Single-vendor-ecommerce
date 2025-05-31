@@ -3,8 +3,7 @@ const path = require('path');
 const fs = require('fs');
 
 /**
- * Get authenticated user's profile data.
- * GET /api/users/me
+ * Get authenticated user's profile information.
  */
 exports.getProfile = async (req, res) => {
     try {
@@ -25,8 +24,8 @@ exports.getProfile = async (req, res) => {
 };
 
 /**
- * Update authenticated user's profile (name and/or email).
- * PATCH /api/users/me
+ * Update user's profile: name and email.
+ * Email change resets email verification.
  */
 exports.updateProfile = async (req, res) => {
     try {
@@ -37,7 +36,7 @@ exports.updateProfile = async (req, res) => {
 
         if (email !== undefined && email !== user.email) {
             user.email = email;
-            user.isEmailVerified = false; // Reset verification on email change
+            user.isEmailVerified = false; // Require re-verification
         }
 
         await user.save();
@@ -50,8 +49,7 @@ exports.updateProfile = async (req, res) => {
 };
 
 /**
- * Delete authenticated user's account.
- * DELETE /api/users/me
+ * Delete the authenticated user's account.
  */
 exports.deleteAccount = async (req, res) => {
     try {
@@ -65,8 +63,7 @@ exports.deleteAccount = async (req, res) => {
 };
 
 /**
- * Update user's shipping address.
- * PATCH /api/users/me/address
+ * Update user's address.
  */
 exports.updateAddress = async (req, res) => {
     try {
@@ -86,7 +83,6 @@ exports.updateAddress = async (req, res) => {
 
 /**
  * Update user's mobile number.
- * PATCH /api/users/me/mobile
  */
 exports.updateMobile = async (req, res) => {
     try {
@@ -105,9 +101,8 @@ exports.updateMobile = async (req, res) => {
 };
 
 /**
- * Upload and update user's avatar image.
- * POST /api/users/me/avatar
- * Expects a single file upload with field name 'avatar'.
+ * Upload or update user's avatar image.
+ * Deletes previous avatar file if exists.
  */
 exports.uploadAvatar = async (req, res) => {
     try {
@@ -115,7 +110,7 @@ exports.uploadAvatar = async (req, res) => {
 
         const user = req.user;
 
-        // Delete old avatar file if exists
+        // Remove old avatar file if exists
         if (user.avatar) {
             const oldPath = path.join(__dirname, '..', user.avatar);
             if (fs.existsSync(oldPath)) {
@@ -134,8 +129,7 @@ exports.uploadAvatar = async (req, res) => {
 };
 
 /**
- * Confirm and mark email as verified.
- * POST /api/users/me/verify-email-change
+ * Mark user's email as verified after verification process.
  */
 exports.verifyEmailChange = async (req, res) => {
     try {

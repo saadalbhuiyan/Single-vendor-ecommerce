@@ -5,9 +5,10 @@ const authMiddleware = require('../middleware/authMiddleware');
 
 /**
  * Cart management routes.
- * All routes are protected by user authentication.
+ * All routes require user authentication via JWT.
  */
 
+// Protect all routes with user token verification middleware
 router.use(authMiddleware.verifyUserToken);
 
 // Get the current user's cart
@@ -25,10 +26,10 @@ router.delete('/items/:itemId', cartController.removeCartItem);
 // Apply a coupon to the user's cart
 router.post('/apply-coupon', cartController.applyCouponToCart);
 
-// Remove a coupon from the cart
+// Remove a coupon from the user's cart
 router.post('/remove-coupon', cartController.removeCouponFromCart);
 
-// Clear all items and coupons from the user's cart
+// Clear the entire cart (items and coupon)
 router.delete('/clear', cartController.clearCart);
 
 module.exports = router;

@@ -6,29 +6,29 @@ const jwt = require('jsonwebtoken');
 const jwtConfig = require('../config/jwtConfig');
 
 /**
- * Sends a One-Time Password (OTP) to the specified email address.
- * - Deletes any previous OTPs for the email.
- * - Generates a new 6-digit OTP with a 5-minute expiry.
- * - Sends OTP via configured SMTP transporter.
- * POST /api/auth/send-otp
+ * Send OTP to the provided email address.
+ * Generates a 6-digit OTP, stores it with expiration,
+ * deletes previous OTPs for that email, and emails the code.
  */
 exports.sendOTP = async (req, res) => {
     try {
         const { email } = req.body;
+
+        // Validate email presence
         if (!email) return res.status(400).json({ message: 'Email is required.' });
 
-        // Generate OTP and expiry time
+        // Generate 6-digit OTP
         const otpCode = generateOTP(6);
-        const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes from now
+        const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiry
 
-        // Remove any existing OTPs for the email to avoid conflicts
+        // Remove any previous OTP entries for this email
         await OTP.deleteMany({ email });
 
-        // Save new OTP record
+        // Save new OTP entry
         const otpEntry = new OTP({ email, code: otpCode, expiresAt });
         await otpEntry.save();
 
-        // Prepare email message
+        // Email options
         const mailOptions = {
             from: `"E-Commerce" <${process.env.SMTP_USER}>`,
             to: email,
@@ -36,7 +36,7 @@ exports.sendOTP = async (req, res) => {
             text: `Your OTP code is ${otpCode}. It expires in 5 minutes.`,
         };
 
-        // Send OTP email
+        // Send email with OTP
         await transporter.sendMail(mailOptions);
 
         return res.json({ message: 'OTP sent to email.' });
@@ -50,25 +50,29 @@ exports.sendOTP = async (req, res) => {
 };
 
 /**
- * Verifies the provided OTP for the given email.
- * - Checks OTP validity and expiry.
- * - Creates a new user if not existing or verifies existing user email.
- * - Issues a JWT token upon successful verification.
- * POST /api/auth/verify-otp
+ * Verify OTP for the given email.
+ * Checks OTP validity and expiration,
+ * creates or updates user verification status,
+ * generates JWT token for authenticated session.
  */
 exports.verifyOTP = async (req, res) => {
     try {
         const { email, otp } = req.body;
+
+        // Validate input presence
         if (!email || !otp) {
             return res.status(400).json({ message: 'Email and OTP are required.' });
         }
 
-        // Find OTP record
+        // Find OTP record matching email and code
         const otpEntry = await OTP.findOne({ email, code: otp });
-        if (!otpEntry) return res.status(400).json({ message: 'Invalid OTP.' });
+        if (!otpEntry) {
+            return res.status(400).json({ message: 'Invalid OTP.' });
+        }
 
-        // Check expiry
+        // Check if OTP expired
         if (otpEntry.expiresAt < new Date()) {
+            // Cleanup expired OTPs
             await OTP.deleteMany({ email });
             return res.status(400).json({ message: 'OTP expired.' });
         }
@@ -83,14 +87,14 @@ exports.verifyOTP = async (req, res) => {
             await user.save();
         }
 
-        // Generate JWT token
+        // Generate JWT token for user session
         const token = jwt.sign({ id: user._id }, jwtConfig.secret, { expiresIn: jwtConfig.expiresIn });
 
-        // Store JWT token in user record
+        // Save token to user record (optional; consider stateless JWT)
         user.jwtToken = token;
         await user.save();
 
-        // Remove OTPs after successful verification
+        // Remove OTP records after successful verification
         await OTP.deleteMany({ email });
 
         return res.json({
@@ -104,9 +108,8 @@ exports.verifyOTP = async (req, res) => {
 };
 
 /**
- * Logs out the authenticated user by invalidating their stored JWT token.
- * - Expects Bearer token in Authorization header.
- * POST /api/auth/logout
+ * Logout user by invalidating JWT token stored in user record.
+ * Token expected in Authorization header as Bearer token.
  */
 exports.logout = async (req, res) => {
     try {
@@ -115,9 +118,10 @@ exports.logout = async (req, res) => {
 
         if (!token) return res.status(400).json({ message: 'No token provided.' });
 
+        // Verify token and extract payload
         const decoded = jwt.verify(token, jwtConfig.secret);
 
-        // Find user and clear stored JWT token
+        // Find user and clear token to logout
         const user = await User.findById(decoded.id);
         if (user) {
             user.jwtToken = null;
@@ -127,6 +131,12 @@ exports.logout = async (req, res) => {
         return res.json({ message: 'Logged out successfully.' });
     } catch (error) {
         console.error('logout error:', error);
+
+        // Handle token verification errors explicitly
+        if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+            return res.status(401).json({ message: 'Invalid or expired token.' });
+        }
+
         return res.status(500).json({ message: 'Internal Server Error' });
     }
 };

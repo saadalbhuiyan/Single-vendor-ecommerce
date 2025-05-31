@@ -1,8 +1,8 @@
 const Category = require('../models/Category');
 
 /**
- * User-Facing: Get all top-level categories (categories without a parent).
- * GET /api/categories/top-level
+ * Get all top-level categories (those with no parent).
+ * Sorted by name ascending.
  */
 exports.getTopLevelCategories = async (req, res) => {
     try {
@@ -15,8 +15,8 @@ exports.getTopLevelCategories = async (req, res) => {
 };
 
 /**
- * User-Facing: Get subcategories under a specified parent category.
- * GET /api/categories/:parentId/subcategories
+ * Get subcategories of a given parent category.
+ * @param {string} parentId - Parent category ID from URL params.
  */
 exports.getSubcategories = async (req, res) => {
     try {
@@ -30,10 +30,7 @@ exports.getSubcategories = async (req, res) => {
 };
 
 /**
- * Admin-Facing: Get all categories (flat list).
- * GET /api/admin/categories
- *
- * Note: Consider implementing a tree structure response if required.
+ * Get all categories sorted by name.
  */
 exports.getAllCategories = async (req, res) => {
     try {
@@ -46,8 +43,8 @@ exports.getAllCategories = async (req, res) => {
 };
 
 /**
- * Admin-Facing: Create a new category or subcategory.
- * POST /api/admin/categories
+ * Create a new category.
+ * Validates required name field and parent category existence if provided.
  */
 exports.createCategory = async (req, res) => {
     try {
@@ -70,16 +67,19 @@ exports.createCategory = async (req, res) => {
         res.status(201).json({ message: 'Category created', category });
     } catch (error) {
         console.error('createCategory error:', error);
-        if (error.code === 11000) { // Duplicate key error
+
+        // Handle duplicate key error (e.g., unique name violation)
+        if (error.code === 11000) {
             return res.status(400).json({ message: 'Category name must be unique' });
         }
+
         res.status(500).json({ message: 'Internal Server Error' });
     }
 };
 
 /**
- * Admin-Facing: Update category details.
- * PUT /api/admin/categories/:id
+ * Update an existing category.
+ * Validates existence, prevents circular parenting, and checks parent validity.
  */
 exports.updateCategory = async (req, res) => {
     try {
@@ -114,18 +114,17 @@ exports.updateCategory = async (req, res) => {
         res.json({ message: 'Category updated', category });
     } catch (error) {
         console.error('updateCategory error:', error);
+
         if (error.code === 11000) {
             return res.status(400).json({ message: 'Category name must be unique' });
         }
+
         res.status(500).json({ message: 'Internal Server Error' });
     }
 };
 
 /**
- * Admin-Facing: Delete a category.
- * DELETE /api/admin/categories/:id
- *
- * Optional: Add checks to prevent deletion if category has subcategories or linked products.
+ * Delete a category by ID.
  */
 exports.deleteCategory = async (req, res) => {
     try {

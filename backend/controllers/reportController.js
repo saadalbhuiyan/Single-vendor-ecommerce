@@ -5,10 +5,8 @@ const Coupon = require('../models/Coupon');
 const ReturnRequest = require('../models/ReturnRequest');
 
 /**
- * Get sales report for the last 30 days:
- * - total sales amount
- * - total orders
- * - average order value
+ * Get sales report for last 30 days:
+ * total sales, total orders, average order value.
  */
 exports.getSalesReport = async (req, res) => {
     try {
@@ -35,10 +33,8 @@ exports.getSalesReport = async (req, res) => {
 };
 
 /**
- * Get user activity report for the last 30 days:
- * - total users
- * - active users who placed orders
- * - active user percentage
+ * Get user activity report for last 30 days:
+ * total users, active users, and active user percentage.
  */
 exports.getUserActivityReport = async (req, res) => {
     try {
@@ -53,7 +49,7 @@ exports.getUserActivityReport = async (req, res) => {
             data: {
                 totalUsers,
                 activeUsers: activeUsers.length,
-                activeUserPercentage: ((activeUsers.length / totalUsers) * 100).toFixed(2),
+                activeUserPercentage: totalUsers > 0 ? ((activeUsers.length / totalUsers) * 100).toFixed(2) : '0.00',
             },
         });
     } catch (error) {
@@ -63,9 +59,7 @@ exports.getUserActivityReport = async (req, res) => {
 };
 
 /**
- * Get product performance report:
- * - total quantity sold per product
- * - total sales amount per product
+ * Get product performance report: total quantity sold and sales amount by product.
  */
 exports.getProductPerformanceReport = async (req, res) => {
     try {
@@ -107,7 +101,7 @@ exports.getProductPerformanceReport = async (req, res) => {
 };
 
 /**
- * Get order status distribution report.
+ * Get order status counts report.
  */
 exports.getOrderStatusReport = async (req, res) => {
     try {
@@ -128,9 +122,7 @@ exports.getOrderStatusReport = async (req, res) => {
 };
 
 /**
- * Get coupon usage report:
- * - usage count per coupon
- * - total discount amount per coupon
+ * Get coupon usage statistics: usage count and total discount given per coupon.
  */
 exports.getCouponUsageReport = async (req, res) => {
     try {
@@ -154,7 +146,7 @@ exports.getCouponUsageReport = async (req, res) => {
 };
 
 /**
- * Get return/refund request statistics.
+ * Get return requests status counts.
  */
 exports.getReturnRequestsReport = async (req, res) => {
     try {
@@ -179,7 +171,7 @@ exports.getReturnRequestsReport = async (req, res) => {
 };
 
 /**
- * Get sales by category report.
+ * Get sales by category report: total sales and quantity grouped by category.
  */
 exports.getSalesByCategoryReport = async (req, res) => {
     try {
@@ -230,7 +222,8 @@ exports.getSalesByCategoryReport = async (req, res) => {
 };
 
 /**
- * Get top customers report (top 10 by total spent).
+ * Get top customers report: total spent and total orders per user.
+ * Returns top 10 customers by amount spent.
  */
 exports.getTopCustomersReport = async (req, res) => {
     try {
@@ -272,7 +265,7 @@ exports.getTopCustomersReport = async (req, res) => {
 };
 
 /**
- * Get inventory status report by summing stock in product variants.
+ * Get inventory status report: total stock per product.
  */
 exports.getInventoryStatusReport = async (req, res) => {
     try {

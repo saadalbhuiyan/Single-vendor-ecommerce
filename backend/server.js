@@ -8,49 +8,51 @@ const orderController = require('./controllers/orderController');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Connect to the database
+// Connect to MongoDB database
 connectDB();
 
 // Middleware setup
-app.use(cors());  // Enable Cross-Origin Resource Sharing
-app.use(express.json());  // Parse incoming JSON requests
-app.use('/uploads', express.static('uploads'));  // Serve static files (uploads)
+app.use(cors()); // Enable CORS for all origins by default (consider restricting in production)
+app.use(express.json()); // Parse JSON request bodies
+app.use('/uploads', express.static('uploads')); // Serve uploaded static files
 
-// User & Authentication Routes
-app.use('/api/auth', require('./routes/authRoutes'));  // Authentication routes (login, OTP)
-app.use('/api/users', require('./routes/userRoutes'));  // User profile and account routes
+// Authentication routes (login, OTP, signup, etc.)
+app.use('/api/auth', require('./routes/authRoutes'));
 
-// Admin Routes
-app.use('/api/admin', require('./routes/adminRoutes'));  // Admin routes (auth)
-app.use('/api/admin/users', require('./routes/adminUserRoutes'));  // Admin user management routes
-app.use('/api/admin/categories', require('./routes/adminCategoryRoutes'));  // Admin category routes
-app.use('/api/admin/products', require('./routes/adminProductRoutes'));  // Admin product management routes
-app.use('/api/admin/wishlist', require('./routes/adminWishlistRoutes'));  // Admin wishlist management routes
-app.use('/api/admin/coupons', require('./routes/adminCouponRoutes'));  // Admin coupon routes
-app.use('/api/admin/orders', require('./routes/adminOrderRoutes'));  // Admin order management routes
-app.use('/api/admin/reports', require('./routes/adminReportRoutes'));  // Admin reports
+// User profile and account management routes
+app.use('/api/users', require('./routes/userRoutes'));
 
-// Category and Product Routes (Public and Admin routes separated)
-app.use('/api/categories', require('./routes/categoryRoutes'));  // Public category routes
-app.use('/api/products', require('./routes/productRoutes'));  // Public product routes
+// Admin routes for authentication and management
+app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/admin/users', require('./routes/adminUserRoutes'));
+app.use('/api/admin/categories', require('./routes/adminCategoryRoutes'));
+app.use('/api/admin/products', require('./routes/adminProductRoutes'));
+app.use('/api/admin/wishlist', require('./routes/adminWishlistRoutes'));
+app.use('/api/admin/coupons', require('./routes/adminCouponRoutes'));
+app.use('/api/admin/orders', require('./routes/adminOrderRoutes'));
+app.use('/api/admin/reports', require('./routes/adminReportRoutes'));
 
-// Wishlist Routes (Public and Admin routes separated)
-app.use('/api/wishlist', require('./routes/wishlistRoutes'));  // Public wishlist routes
+// Public category and product routes
+app.use('/api/categories', require('./routes/categoryRoutes'));
+app.use('/api/products', require('./routes/productRoutes'));
 
-// Coupon Routes (Public and Admin routes separated)
-app.use('/api/coupons', require('./routes/couponRoutes'));  // Public coupon routes
+// Wishlist routes for users
+app.use('/api/wishlist', require('./routes/wishlistRoutes'));
 
-// Cart Routes
-app.use('/api/cart', require('./routes/cartRoutes'));  // Cart management routes
+// Coupon routes for users
+app.use('/api/coupons', require('./routes/couponRoutes'));
 
-// Order Routes (User and Admin routes separated)
-app.use('/api/orders', require('./routes/orderRoutes'));  // User order routes
+// Cart management routes
+app.use('/api/cart', require('./routes/cartRoutes'));
 
-// Payment Callback Routes (simulate gateway webhooks)
+// User order routes
+app.use('/api/orders', require('./routes/orderRoutes'));
+
+// Payment gateway callback/webhook endpoints
 app.post('/api/payment/success', orderController.handlePaymentSuccess);
 app.post('/api/payment/fail', orderController.handlePaymentFail);
 
-// Start the server
+// Start server listening on the configured port
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });

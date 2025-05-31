@@ -3,10 +3,8 @@ const Cart = require('../models/Cart');
 const Coupon = require('../models/Coupon');
 
 /**
- * Helper: Calculate total price from cart items and optional coupon discount.
- * @param {Object} cart - Cart document populated with items and products
- * @param {Object|null} coupon - Coupon data or null
- * @returns {Number} Total amount after discount (minimum 0)
+ * Calculate total amount for cart items considering coupon discounts.
+ * Ensures total is never negative.
  */
 const calculateTotal = (cart, coupon) => {
     let total = 0;
@@ -30,22 +28,25 @@ const calculateTotal = (cart, coupon) => {
             total -= coupon.discountValue;
         }
     }
+
     return total < 0 ? 0 : total;
 };
 
 /**
- * Create an order from the user's cart.
- * POST /api/orders
+ * Create a new order from the authenticated user's cart.
+ * Clears cart upon successful order creation.
  */
 exports.createOrder = async (req, res) => {
     try {
         const userId = req.user._id;
 
+        // Fetch cart with populated products
         const cart = await Cart.findOne({ user: userId }).populate('items.product');
         if (!cart || cart.items.length === 0) {
             return res.status(400).json({ success: false, message: 'Cart is empty' });
         }
 
+        // Retrieve valid coupon details if applied
         let couponData = null;
         if (cart.coupon && cart.coupon.code) {
             const coupon = await Coupon.findOne({ code: cart.coupon.code, active: true });
@@ -60,6 +61,7 @@ exports.createOrder = async (req, res) => {
 
         const totalAmount = calculateTotal(cart, couponData);
 
+        // Prepare order items with price details
         const orderItems = cart.items.map(item => {
             let price = 0;
             if (item.variant) {
@@ -78,6 +80,7 @@ exports.createOrder = async (req, res) => {
             };
         });
 
+        // Create and save the order
         const order = new Order({
             user: userId,
             items: orderItems,
@@ -86,12 +89,12 @@ exports.createOrder = async (req, res) => {
             shippingAddress: req.body.shippingAddress || {},
             paymentStatus: 'pending',
             orderStatus: 'pending',
-            paymentMethod: 'DemoGateway', // Change dynamically if needed
+            paymentMethod: 'DemoGateway',
         });
 
         await order.save();
 
-        // Clear user's cart
+        // Clear the user's cart after order creation
         cart.items = [];
         cart.coupon = null;
         await cart.save();
@@ -105,7 +108,6 @@ exports.createOrder = async (req, res) => {
 
 /**
  * Get all orders for the authenticated user.
- * GET /api/orders
  */
 exports.getUserOrders = async (req, res) => {
     try {
@@ -118,8 +120,7 @@ exports.getUserOrders = async (req, res) => {
 };
 
 /**
- * Get specific order details by ID for authenticated user.
- * GET /api/orders/:id
+ * Get a single order by ID for the authenticated user.
  */
 exports.getOrderById = async (req, res) => {
     try {
@@ -137,8 +138,7 @@ exports.getOrderById = async (req, res) => {
 };
 
 /**
- * Cancel an order (only if not shipped or delivered).
- * PUT /api/orders/:id/cancel
+ * Cancel an order if it hasn't shipped or been delivered yet.
  */
 exports.cancelOrder = async (req, res) => {
     try {
@@ -160,16 +160,17 @@ exports.cancelOrder = async (req, res) => {
 };
 
 /**
- * Simulate payment initiation (demo purpose).
- * GET /api/orders/:id/initiate-payment
+ * Provide payment gateway URL for the order payment initiation.
  */
 exports.initiatePayment = async (req, res) => {
     try {
         const order = await Order.findOne({ _id: req.params.id, user: req.user._id });
         if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
-        if (order.paymentStatus === 'paid') return res.status(400).json({ success: false, message: 'Order already paid' });
 
-        // Simulated payment URL
+        if (order.paymentStatus === 'paid') {
+            return res.status(400).json({ success: false, message: 'Order already paid' });
+        }
+
         const paymentGatewayUrl = `https://demo-payment-gateway.com/pay?orderId=${order._id}&amount=${order.totalAmount}`;
 
         res.status(200).json({ success: true, paymentGatewayUrl });
@@ -180,12 +181,11 @@ exports.initiatePayment = async (req, res) => {
 };
 
 /**
- * Handle payment success webhook (simulate).
- * POST /api/orders/payment-success
+ * Handle successful payment notification.
  */
 exports.handlePaymentSuccess = async (req, res) => {
     try {
-        const { tran_id } = req.body; // transaction/order ID
+        const { tran_id } = req.body;
 
         const order = await Order.findById(tran_id);
         if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
@@ -202,8 +202,7 @@ exports.handlePaymentSuccess = async (req, res) => {
 };
 
 /**
- * Handle payment failure webhook (simulate).
- * POST /api/orders/payment-fail
+ * Handle failed payment notification.
  */
 exports.handlePaymentFail = async (req, res) => {
     try {
@@ -224,8 +223,7 @@ exports.handlePaymentFail = async (req, res) => {
 };
 
 /**
- * Request a return/refund for an order.
- * PUT /api/orders/:id/request-return
+ * Request a return for an order.
  */
 exports.requestReturn = async (req, res) => {
     try {
@@ -249,8 +247,7 @@ exports.requestReturn = async (req, res) => {
 };
 
 /**
- * Admin: Get all orders.
- * GET /api/admin/orders
+ * Get all orders (admin level).
  */
 exports.getAllOrders = async (req, res) => {
     try {
@@ -263,8 +260,7 @@ exports.getAllOrders = async (req, res) => {
 };
 
 /**
- * Admin: Update order status.
- * PUT /api/admin/orders/:id/status
+ * Update order status (admin level).
  */
 exports.updateOrderStatus = async (req, res) => {
     try {
@@ -287,8 +283,7 @@ exports.updateOrderStatus = async (req, res) => {
 };
 
 /**
- * Admin: Approve order cancellation.
- * PUT /api/admin/orders/:id/approve-cancellation
+ * Approve order cancellation (admin level).
  */
 exports.approveOrderCancellation = async (req, res) => {
     try {

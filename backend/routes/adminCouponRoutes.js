@@ -4,20 +4,21 @@ const couponController = require('../controllers/couponController');
 const authMiddleware = require('../middleware/authMiddleware');
 
 /**
- * All routes below are protected and require admin authentication.
+ * All coupon routes below require admin authentication.
+ * The verifyAdminToken middleware protects these routes.
  */
 router.use(authMiddleware.verifyAdminToken);
 
-// Create a new coupon (admin)
+// Create a new coupon (admin only)
 router.post('/', couponController.createCoupon);
 
-// Get all coupons (admin)
+// Get all coupons (admin only)
 router.get('/', couponController.getAllCoupons);
 
-// Update a coupon by ID (admin)
+// Update an existing coupon by ID (admin only)
 router.put('/:id', couponController.updateCoupon);
 
-// Delete a coupon by ID (admin)
+// Delete a coupon by ID (admin only)
 router.delete('/:id', couponController.deleteCoupon);
 
 module.exports = router;

@@ -5,8 +5,7 @@ const path = require('path');
 const { compressImage } = require('../utils/imageUtils');
 
 /**
- * List products with optional filters on category and price range.
- * GET /api/products
+ * List products with optional filtering by category and price range.
  */
 exports.listProducts = async (req, res) => {
     try {
@@ -30,7 +29,6 @@ exports.listProducts = async (req, res) => {
 
 /**
  * Search products by name keyword (case-insensitive).
- * GET /api/products/search?q=keyword
  */
 exports.searchProducts = async (req, res) => {
     try {
@@ -45,8 +43,7 @@ exports.searchProducts = async (req, res) => {
 };
 
 /**
- * Get detailed info of a product by ID.
- * GET /api/products/:id
+ * Get detailed product information by ID.
  */
 exports.getProductDetails = async (req, res) => {
     try {
@@ -61,7 +58,6 @@ exports.getProductDetails = async (req, res) => {
 
 /**
  * Get all reviews for a product.
- * GET /api/products/:id/reviews
  */
 exports.getProductReviews = async (req, res) => {
     try {
@@ -74,8 +70,8 @@ exports.getProductReviews = async (req, res) => {
 };
 
 /**
- * Submit a new review for a product.
- * POST /api/products/:id/review
+ * Submit a review for a product.
+ * Ensures rating is between 1 and 5 and prevents duplicate reviews by same user.
  */
 exports.submitProductReview = async (req, res) => {
     try {
@@ -104,7 +100,7 @@ exports.submitProductReview = async (req, res) => {
 
 /**
  * Create a new product.
- * POST /api/admin/products
+ * Requires name and category fields.
  */
 exports.createProduct = async (req, res) => {
     try {
@@ -131,7 +127,6 @@ exports.createProduct = async (req, res) => {
 
 /**
  * Update an existing product by ID.
- * PUT /api/admin/products/:id
  */
 exports.updateProduct = async (req, res) => {
     try {
@@ -155,8 +150,7 @@ exports.updateProduct = async (req, res) => {
 };
 
 /**
- * Delete a product by ID, removing associated images from filesystem.
- * DELETE /api/admin/products/:id
+ * Delete product by ID, removing associated image files.
  */
 exports.deleteProduct = async (req, res) => {
     try {
@@ -165,6 +159,7 @@ exports.deleteProduct = async (req, res) => {
         const product = await Product.findByIdAndDelete(productId);
         if (!product) return res.status(404).json({ message: 'Product not found' });
 
+        // Delete images from filesystem
         if (product.images && product.images.length > 0) {
             product.images.forEach(imgPath => {
                 const fullPath = path.join(__dirname, '..', imgPath);
@@ -180,8 +175,7 @@ exports.deleteProduct = async (req, res) => {
 };
 
 /**
- * Upload and compress product images.
- * POST /api/admin/products/:id/images
+ * Upload and compress images for a product.
  */
 exports.uploadProductImages = async (req, res) => {
     try {
@@ -200,7 +194,7 @@ exports.uploadProductImages = async (req, res) => {
 
             await compressImage(file.path, compressedImagePath);
 
-            // Delete original uncompressed file
+            // Remove original uploaded file
             fs.unlinkSync(file.path);
 
             product.images.push(compressedImagePath);

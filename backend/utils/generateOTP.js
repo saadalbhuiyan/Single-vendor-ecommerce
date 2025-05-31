@@ -1,16 +1,16 @@
 /**
- * Generates a random OTP (One-Time Password) of a specified length.
+ * Generate a numeric OTP of specified length.
  * Default length is 6 digits.
  *
- * @param {number} length - The length of the OTP to generate (default is 6).
- * @returns {string} The generated OTP as a string.
+ * @param {number} length - Length of the OTP to generate.
+ * @returns {string} Numeric OTP string.
  */
 function generateOTP(length = 6) {
-    const digits = '0123456789';  // Digits used for OTP generation
+    const digits = '0123456789';
     let otp = '';
 
-    // Generate OTP by randomly selecting digits from the available options
     for (let i = 0; i < length; i++) {
+        // Pick a random digit and append to OTP string
         otp += digits[Math.floor(Math.random() * digits.length)];
     }
 

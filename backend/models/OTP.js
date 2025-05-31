@@ -1,9 +1,13 @@
 const mongoose = require('mongoose');
 
 /**
- * OTP Schema
- * Stores one-time password codes linked to user emails.
- * Includes TTL index to auto-delete expired OTP documents.
+ * OTP schema for storing one-time password codes tied to emails.
+ * Fields:
+ * - email: user email address (required)
+ * - code: OTP code string (required)
+ * - expiresAt: datetime when OTP expires (required)
+ *
+ * TTL index on expiresAt automatically deletes expired OTP documents.
  */
 const otpSchema = new mongoose.Schema(
     {
@@ -14,7 +18,7 @@ const otpSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-// TTL index on expiresAt field to automatically remove expired OTPs
+// TTL index to auto-remove documents when expiresAt passes
 otpSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 module.exports = mongoose.model('OTP', otpSchema);

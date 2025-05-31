@@ -1,10 +1,20 @@
 const mongoose = require('mongoose');
 
 /**
- * Coupon Schema
- *
- * Represents discount coupons with constraints such as validity period,
- * usage limits, discount type and amount.
+ * Coupon schema defines discount codes and their properties.
+ * Fields:
+ * - code: unique uppercase coupon code (required)
+ * - description: optional textual description
+ * - discountType: either 'percentage' or 'fixed' (required)
+ * - discountValue: numeric value of discount (required)
+ * - minPurchaseAmount: minimum order amount to apply coupon (default 0)
+ * - maxDiscountAmount: maximum discount amount allowed (nullable)
+ * - usageLimit: max number of uses (nullable)
+ * - usedCount: number of times coupon has been used (default 0)
+ * - validFrom: start date of coupon validity (default to creation date)
+ * - validUntil: end date of coupon validity (required)
+ * - active: whether coupon is currently active (default true)
+ * - createdAt: timestamp of creation (default now)
  */
 const CouponSchema = new mongoose.Schema({
     code: {
@@ -22,23 +32,23 @@ const CouponSchema = new mongoose.Schema({
     },
     discountValue: {
         type: Number,
-        required: true, // Percentage (0-100) or fixed amount
+        required: true,
     },
     minPurchaseAmount: {
         type: Number,
-        default: 0, // Minimum cart amount to apply coupon
+        default: 0,
     },
     maxDiscountAmount: {
         type: Number,
-        default: null, // Optional maximum discount cap
+        default: null,
     },
     usageLimit: {
         type: Number,
-        default: null, // Null means unlimited usage
+        default: null,
     },
     usedCount: {
         type: Number,
-        default: 0, // Number of times coupon has been used
+        default: 0,
     },
     validFrom: {
         type: Date,

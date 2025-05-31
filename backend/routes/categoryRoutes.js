@@ -3,14 +3,14 @@ const router = express.Router();
 const categoryController = require('../controllers/categoryController');
 
 /**
- * Public routes for category management.
- * These routes are accessible without authentication.
+ * Public routes for category retrieval.
+ * Accessible without authentication.
  */
 
-// Get top-level categories (no parent category)
+// Get all top-level categories (categories with no parent)
 router.get('/', categoryController.getTopLevelCategories);
 
-// Get subcategories under a specific parent category
+// Get all subcategories for a given parent category ID
 router.get('/:parentId/subcategories', categoryController.getSubcategories);
 
 module.exports = router;

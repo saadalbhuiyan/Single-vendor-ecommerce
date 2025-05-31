@@ -1,22 +1,20 @@
 const nodemailer = require('nodemailer');
 
 /**
- * Create and configure the SMTP transporter using environment variables.
- * Defaults to Gmail SMTP server if environment variables are not set.
+ * Create and configure nodemailer transporter using SMTP.
+ * Uses environment variables with fallback defaults.
  */
 const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
     port: process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 587,
-    secure: false, // Use TLS for port 587
+    secure: false, // false for TLS (STARTTLS), true for SSL
     auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
     },
 });
 
-/**
- * Verify SMTP configuration to ensure transporter is ready to send emails.
- */
+// Verify SMTP connection configuration on startup
 transporter.verify((error, success) => {
     if (error) {
         console.error('SMTP configuration error:', error);

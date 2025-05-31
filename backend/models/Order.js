@@ -1,17 +1,36 @@
 const mongoose = require('mongoose');
 
 /**
- * Schema representing an individual item in an order.
+ * Schema for individual items in an order.
+ * Fields:
+ * - product: references a Product document (required)
+ * - variant: references a variant within Product.variants (optional)
+ * - quantity: number of units ordered (min 1)
+ * - price: price per unit at time of order (required)
  */
 const orderItemSchema = new mongoose.Schema({
     product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
-    variant: { type: mongoose.Schema.Types.ObjectId, ref: 'Product.variants', default: null }, // Optional variant reference
+    // Variant usually is a subdocument within Product, so ref to 'Product.variants' won't work in Mongoose
+    // Instead, store variant id as String or ObjectId without ref or custom ref handling.
+    variant: { type: mongoose.Schema.Types.ObjectId, default: null },
     quantity: { type: Number, required: true, min: 1 },
-    price: { type: Number, required: true }, // Price per unit at time of purchase
+    price: { type: Number, required: true },
 });
 
 /**
- * Schema representing an order placed by a user.
+ * Main Order schema.
+ * Fields:
+ * - user: reference to User who placed the order (required)
+ * - items: array of order items
+ * - shippingAddress: embedded address object
+ * - paymentStatus: enum, defaults to 'pending'
+ * - orderStatus: enum, defaults to 'pending'
+ * - paymentMethod: string, default is 'DemoGateway'
+ * - totalAmount: total order amount (required)
+ * - coupon: embedded coupon info (code, discountType, discountValue)
+ * - returnRequested: boolean flag for return requests
+ * - returnReason: string explanation for return
+ * - createdAt, updatedAt: timestamps
  */
 const orderSchema = new mongoose.Schema({
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },

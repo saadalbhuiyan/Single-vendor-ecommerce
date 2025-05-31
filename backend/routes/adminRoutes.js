@@ -7,10 +7,10 @@ const { verifyAdminToken } = require('../middleware/authMiddleware');
  * Admin authentication routes.
  */
 
-// Admin login (no auth required)
+// Admin login route (no authentication required)
 router.post('/auth/login', adminController.adminLogin);
 
-// Update admin credentials (protected)
+// Update admin credentials (requires admin JWT token)
 router.put('/credentials', verifyAdminToken, adminController.updateAdminCredentials);
 
 module.exports = router;

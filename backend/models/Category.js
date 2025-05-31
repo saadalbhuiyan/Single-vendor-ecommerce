@@ -1,10 +1,11 @@
 const mongoose = require('mongoose');
 
 /**
- * Category Schema
- *
- * Supports hierarchical categories via optional parent reference.
- * A null parent indicates a top-level category.
+ * Category schema supports hierarchical categories.
+ * Fields:
+ * - name: unique name for the category (required)
+ * - description: optional description text
+ * - parent: reference to parent Category (null for top-level)
  */
 const categorySchema = new mongoose.Schema(
     {

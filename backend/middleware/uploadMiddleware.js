@@ -7,7 +7,7 @@ const uploadDir = path.join(__dirname, '..', 'uploads');
 
 // Ensure uploads directory exists; create if not
 if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir);
+    fs.mkdirSync(uploadDir, { recursive: true }); // recursive: true for nested dirs safety
 }
 
 // Configure multer storage settings

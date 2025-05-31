@@ -4,10 +4,10 @@ const reportController = require('../controllers/reportController');
 const { verifyAdminToken } = require('../middleware/authMiddleware');
 
 /**
- * All report endpoints require admin authentication.
+ * All report endpoints are protected by admin JWT authentication.
  */
 
-// Sales report (last 30 days)
+// Sales report for last 30 days
 router.get('/sales', verifyAdminToken, reportController.getSalesReport);
 
 // User activity report

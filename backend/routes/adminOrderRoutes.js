@@ -5,11 +5,11 @@ const authMiddleware = require('../middleware/authMiddleware');
 
 /**
  * Admin routes for order management.
- * Protected by admin JWT authentication.
+ * All routes are protected by admin JWT authentication middleware.
  */
 router.use(authMiddleware.verifyAdminToken);
 
-// Get all orders
+// Get a list of all orders
 router.get('/', orderController.getAllOrders);
 
 // Update order status by order ID

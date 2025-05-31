@@ -1,17 +1,23 @@
 const mongoose = require('mongoose');
 
 /**
- * Schema representing an item in the cart.
+ * Schema for individual cart items.
+ * - product: references a Product document (required)
+ * - variant: optional variant identifier (e.g., size, color)
+ * - quantity: number of units, minimum 1, defaults to 1
  */
 const CartItemSchema = new mongoose.Schema({
     product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
-    variant: { type: String, default: null }, // Optional variant ID as string
+    variant: { type: String, default: null },
     quantity: { type: Number, required: true, min: 1, default: 1 },
 });
 
 /**
- * Schema representing a user's shopping cart.
- * Each user can have only one cart (unique user field).
+ * Cart schema linked to a single user.
+ * - user: references User document, unique per user (one cart per user)
+ * - items: array of CartItemSchema
+ * - coupon: optional coupon details applied to cart
+ * - updatedAt: timestamp for last cart update
  */
 const CartSchema = new mongoose.Schema({
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', unique: true, required: true },

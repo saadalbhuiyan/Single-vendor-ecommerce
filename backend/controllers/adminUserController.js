@@ -1,9 +1,8 @@
 const User = require('../models/User');
 
 /**
- * Retrieves all users excluding their JWT tokens for security.
- * Sorted by creation date in descending order.
- * GET /api/admin/users
+ * Get all users, excluding sensitive JWT token,
+ * sorted by creation date descending (newest first).
  */
 exports.getAllUsers = async (req, res) => {
     try {
@@ -16,17 +15,22 @@ exports.getAllUsers = async (req, res) => {
 };
 
 /**
- * Retrieves a single user by ID, excluding JWT token.
- * Returns 404 if user is not found.
- * GET /api/admin/users/:id
+ * Get user by ID, excluding sensitive JWT token.
+ * Returns 404 if user not found.
  */
 exports.getUserById = async (req, res) => {
     try {
         const userId = req.params.id;
+
+        // Validate userId format (optional, but recommended)
+        if (!userId.match(/^[0-9a-fA-F]{24}$/)) {
+            return res.status(400).json({ message: 'Invalid user ID format.' });
+        }
+
         const user = await User.findById(userId, '-jwtToken');
 
         if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+            return res.status(404).json({ message: 'User not found.' });
         }
 
         return res.json(user);
@@ -37,10 +41,9 @@ exports.getUserById = async (req, res) => {
 };
 
 /**
- * Updates the 'isActive' status of a user.
- * Expects boolean field `isActive` in request body.
- * Returns 400 if invalid input or 404 if user not found.
- * PUT /api/admin/users/:id
+ * Update user's active status.
+ * Accepts boolean `isActive` in request body.
+ * Returns 400 if invalid input, 404 if user not found.
  */
 exports.updateUserStatus = async (req, res) => {
     try {
@@ -51,10 +54,14 @@ exports.updateUserStatus = async (req, res) => {
             return res.status(400).json({ message: '`isActive` boolean field is required.' });
         }
 
-        const user = await User.findById(userId);
+        // Optional userId format validation
+        if (!userId.match(/^[0-9a-fA-F]{24}$/)) {
+            return res.status(400).json({ message: 'Invalid user ID format.' });
+        }
 
+        const user = await User.findById(userId);
         if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+            return res.status(404).json({ message: 'User not found.' });
         }
 
         user.isActive = isActive;
@@ -71,17 +78,22 @@ exports.updateUserStatus = async (req, res) => {
 };
 
 /**
- * Deletes a user by ID.
+ * Delete user by ID.
  * Returns 404 if user not found.
- * DELETE /api/admin/users/:id
  */
 exports.deleteUser = async (req, res) => {
     try {
         const userId = req.params.id;
+
+        // Optional userId format validation
+        if (!userId.match(/^[0-9a-fA-F]{24}$/)) {
+            return res.status(400).json({ message: 'Invalid user ID format.' });
+        }
+
         const user = await User.findByIdAndDelete(userId);
 
         if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+            return res.status(404).json({ message: 'User not found.' });
         }
 
         return res.json({ message: 'User deleted successfully.' });

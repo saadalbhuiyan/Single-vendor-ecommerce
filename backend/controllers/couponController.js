@@ -1,8 +1,8 @@
 const Coupon = require('../models/Coupon');
 
 /**
- * Admin: Create a new coupon
- * POST /api/admin/coupons
+ * Create a new coupon.
+ * Validates required fields and uniqueness of coupon code.
  */
 exports.createCoupon = async (req, res) => {
     try {
@@ -19,17 +19,18 @@ exports.createCoupon = async (req, res) => {
             active,
         } = req.body;
 
-        // Basic required field validation
+        // Required fields validation
         if (!code || !discountType || !discountValue || !validUntil) {
             return res.status(400).json({ success: false, message: 'Required fields missing' });
         }
 
-        // Check for duplicate coupon code (case-insensitive)
+        // Check for existing coupon code (case-insensitive)
         const existing = await Coupon.findOne({ code: code.toUpperCase().trim() });
         if (existing) {
             return res.status(400).json({ success: false, message: 'Coupon code already exists' });
         }
 
+        // Create coupon document
         const coupon = new Coupon({
             code: code.toUpperCase().trim(),
             description,
@@ -52,8 +53,7 @@ exports.createCoupon = async (req, res) => {
 };
 
 /**
- * Admin: Get all coupons sorted by creation date descending
- * GET /api/admin/coupons
+ * Retrieve all coupons sorted by creation date (descending).
  */
 exports.getAllCoupons = async (req, res) => {
     try {
@@ -66,8 +66,8 @@ exports.getAllCoupons = async (req, res) => {
 };
 
 /**
- * Admin: Update coupon by ID
- * PUT /api/admin/coupons/:id
+ * Update coupon by ID.
+ * Accepts partial updates; ensures code is uppercase and trimmed.
  */
 exports.updateCoupon = async (req, res) => {
     try {
@@ -95,8 +95,7 @@ exports.updateCoupon = async (req, res) => {
 };
 
 /**
- * Admin: Delete coupon by ID
- * DELETE /api/admin/coupons/:id
+ * Delete coupon by ID.
  */
 exports.deleteCoupon = async (req, res) => {
     try {
@@ -115,8 +114,8 @@ exports.deleteCoupon = async (req, res) => {
 };
 
 /**
- * User: Validate coupon code passed as query param ?code=XYZ123
- * GET /api/coupons/validate?code=XYZ123
+ * Validate coupon code query parameter.
+ * Checks existence, active status, date validity, and usage limits.
  */
 exports.validateCoupon = async (req, res) => {
     try {
@@ -147,8 +146,7 @@ exports.validateCoupon = async (req, res) => {
 };
 
 /**
- * User: Get coupon details by ID
- * GET /api/coupons/:id
+ * Retrieve coupon by ID.
  */
 exports.getCouponById = async (req, res) => {
     try {

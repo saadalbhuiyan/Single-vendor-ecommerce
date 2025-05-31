@@ -1,18 +1,26 @@
 const mongoose = require('mongoose');
 
 /**
- * Establishes a connection to MongoDB using the connection string
- * specified in the environment variable MONGO_URI.
- *
- * Exits the process with failure code if the connection fails.
+ * Establish connection to MongoDB using Mongoose.
+ * Exits process on failure.
  */
 const connectDB = async () => {
     try {
         await mongoose.connect(process.env.MONGO_URI, {
-            useNewUrlParser: true,       // Use the new URL parser (recommended)
-            useUnifiedTopology: true,    // Use the new Server Discover and Monitoring engine
+            useNewUrlParser: true,
+            useUnifiedTopology: true,
         });
+
         console.log('MongoDB connection established successfully.');
+
+        // Optional: Listen to connection events for detailed logging
+        mongoose.connection.on('disconnected', () => {
+            console.warn('MongoDB connection lost.');
+        });
+
+        mongoose.connection.on('reconnected', () => {
+            console.log('MongoDB reconnected.');
+        });
     } catch (error) {
         console.error('Error connecting to MongoDB:', error.message);
         process.exit(1); // Exit process with failure

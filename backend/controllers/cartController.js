@@ -3,10 +3,10 @@ const Product = require('../models/Product');
 const Coupon = require('../models/Coupon');
 
 /**
- * Helper: Retrieve the details of the added variant from a product.
- * @param {Object} product - Product document
- * @param {String|ObjectId} variantId - Variant ID to find
- * @returns {Object|null} Variant details or null if not found
+ * Helper: Find variant details by variantId from a product
+ * @param {Object} product - product document with variants
+ * @param {String|ObjectId} variantId - variant id to match
+ * @returns {Object|null} variant detail or null if not found
  */
 function filterVariantDetails(product, variantId) {
     if (!variantId) return null;
@@ -14,9 +14,9 @@ function filterVariantDetails(product, variantId) {
 }
 
 /**
- * Helper: Format cart items with filtered variant details
- * @param {Array} items - Array of cart items populated with product data
- * @returns {Array} Formatted cart items array
+ * Helper: Format cart items for response
+ * @param {Array} items - cart items with populated product
+ * @returns {Array} formatted items with variant details
  */
 function formatCartItems(items) {
     return items.map(item => {
@@ -37,12 +37,13 @@ function formatCartItems(items) {
 }
 
 /**
- * GET current user's cart details with pricing and discount calculation.
+ * Get the authenticated user's cart with calculated totals
  */
 const getUserCart = async (req, res) => {
     try {
         let cart = await Cart.findOne({ user: req.user._id }).populate('items.product');
         if (!cart) {
+            // Empty cart response
             return res.status(200).json({
                 success: true,
                 data: {
@@ -55,14 +56,14 @@ const getUserCart = async (req, res) => {
             });
         }
 
-        // Calculate subtotal
+        // Calculate subtotal (sum of price * quantity)
         const subtotal = cart.items.reduce((sum, item) => {
             const variant = filterVariantDetails(item.product, item.variant);
             const price = variant ? variant.price : 0;
             return sum + price * item.quantity;
         }, 0);
 
-        // Calculate discount
+        // Calculate discount amount if coupon applied
         let discountAmount = 0;
         if (cart.coupon && cart.coupon.code) {
             if (cart.coupon.discountType === 'percentage') {
@@ -94,7 +95,9 @@ const getUserCart = async (req, res) => {
 };
 
 /**
- * Add a product (with optional variant) to the user's cart.
+ * Add item to user's cart
+ * Creates cart if not existing
+ * Updates quantity if product+variant already exists
  */
 const addItemToCart = async (req, res) => {
     try {
@@ -127,7 +130,7 @@ const addItemToCart = async (req, res) => {
         await cart.save();
         await cart.populate('items.product');
 
-        // Recalculate totals (subtotal, discount, total)
+        // Recalculate totals to return updated cart data
         const subtotal = cart.items.reduce((sum, item) => {
             const variantDetail = filterVariantDetails(item.product, item.variant);
             const price = variantDetail ? variantDetail.price : 0;
@@ -164,7 +167,7 @@ const addItemToCart = async (req, res) => {
 };
 
 /**
- * Update the quantity of a cart item by item ID.
+ * Update quantity of a cart item
  */
 const updateCartItemQuantity = async (req, res) => {
     try {
@@ -208,7 +211,7 @@ const updateCartItemQuantity = async (req, res) => {
 };
 
 /**
- * Remove a cart item by item ID.
+ * Remove an item from the cart
  */
 const removeCartItem = async (req, res) => {
     try {
@@ -246,7 +249,7 @@ const removeCartItem = async (req, res) => {
 };
 
 /**
- * Apply a coupon code to the user's cart.
+ * Apply a coupon code to the user's cart
  */
 const applyCouponToCart = async (req, res) => {
     try {
@@ -297,7 +300,7 @@ const applyCouponToCart = async (req, res) => {
 };
 
 /**
- * Remove the applied coupon from the user's cart.
+ * Remove coupon from the cart
  */
 const removeCouponFromCart = async (req, res) => {
     try {
@@ -333,7 +336,7 @@ const removeCouponFromCart = async (req, res) => {
 };
 
 /**
- * Clear the user's cart by removing all items and coupons.
+ * Clear all items and coupon from cart
  */
 const clearCart = async (req, res) => {
     try {

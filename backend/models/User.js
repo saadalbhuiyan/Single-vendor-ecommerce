@@ -1,8 +1,17 @@
 const mongoose = require('mongoose');
 
 /**
- * User Schema
- * Stores user account details including profile, verification, and status.
+ * User schema defining the user model.
+ * Fields:
+ * - email: unique email address (required)
+ * - name: user's full name (optional)
+ * - mobile: phone number (optional)
+ * - address: user's address (optional)
+ * - avatar: path or URL to user avatar image (optional)
+ * - isEmailVerified: flag indicating if email is verified (default false)
+ * - jwtToken: stored JWT token for session management (optional)
+ * - isActive: user account active status (default true)
+ * - timestamps: automatic createdAt and updatedAt fields
  */
 const userSchema = new mongoose.Schema(
     {

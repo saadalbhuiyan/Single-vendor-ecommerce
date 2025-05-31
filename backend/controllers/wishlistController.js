@@ -2,8 +2,7 @@ const Wishlist = require('../models/Wishlist');
 const Product = require('../models/Product');
 
 /**
- * Get wishlist items of the authenticated user.
- * GET /api/wishlist
+ * Get the authenticated user's wishlist items.
  */
 exports.getUserWishlist = async (req, res) => {
     try {
@@ -20,7 +19,6 @@ exports.getUserWishlist = async (req, res) => {
 
 /**
  * Add a product to the authenticated user's wishlist.
- * POST /api/wishlist
  */
 exports.addToWishlist = async (req, res) => {
     try {
@@ -57,7 +55,6 @@ exports.addToWishlist = async (req, res) => {
 
 /**
  * Remove a product from the authenticated user's wishlist.
- * DELETE /api/wishlist/:productId
  */
 exports.removeFromWishlist = async (req, res) => {
     try {
@@ -74,8 +71,7 @@ exports.removeFromWishlist = async (req, res) => {
 };
 
 /**
- * Clear the entire wishlist for the authenticated user.
- * DELETE /api/wishlist
+ * Clear the authenticated user's entire wishlist.
  */
 exports.clearWishlist = async (req, res) => {
     try {
@@ -88,8 +84,8 @@ exports.clearWishlist = async (req, res) => {
 };
 
 /**
- * Admin: Get all wishlist items with user and product details.
- * GET /api/admin/wishlist
+ * Get all wishlist items (Admin use).
+ * Populates user and product basic info.
  */
 exports.getAllWishlist = async (req, res) => {
     try {
@@ -105,8 +101,7 @@ exports.getAllWishlist = async (req, res) => {
 };
 
 /**
- * Admin: Delete a wishlist item by ID.
- * DELETE /api/admin/wishlist/:id
+ * Delete a wishlist item by ID (Admin use).
  */
 exports.deleteWishlistItemByAdmin = async (req, res) => {
     try {
